@@ -56,6 +56,10 @@ QUIZ
 - Test understanding, not trivia such as dates.
 - explanation: 1–2 sentences, encouraging (even when the child answered wrong).
 
+MAIN CONCEPT (concept)
+- name: the story's main science concept, 1–4 words (e.g. "Lực hấp dẫn", "Quang hợp").
+- definition: one sentence, at most 20 words, understandable for ages 7–12.
+
 MYSTERY QUESTION (Prelude screen)
 - One curiosity-sparking question with 3 options; the answer is revealed during the story
   and must not be given away in the teaser.
@@ -80,6 +84,7 @@ User-facing values are Vietnamese; `character_sheet` and `image_prompt` are Engl
   "prelude_narration": "...",
   "mystery_question": { "question": "...", "options": ["...", "...", "..."], "answer_index": 1 },
   "timeline_mode": "historical",
+  "concept": { "name": "Lực hấp dẫn", "definition": "Lực hút giữa mọi vật có khối lượng." },
   "character_sheet": "Recurring characters: ...",
   "scenes": [
     {

@@ -184,6 +184,7 @@ function validatePlan(p: Plan): Plan {
   p.mystery_question = fixQ(p.mystery_question);
   p.quiz = p.quiz.slice(0, 3).map((q) => ({ ...fixQ(q), scene_ref: Math.min(Math.max(1, q.scene_ref), p.scenes.length) }));
   if (p.quiz.length < 3) throw new Error('Plan thiếu quiz');
+  if (!p.concept?.name) p.concept = { name: p.title, definition: p.scenes[0].key_fact };
   return p;
 }
 

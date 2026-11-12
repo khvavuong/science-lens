@@ -13,8 +13,8 @@ MVP hackathon: một đường đi trọn vẹn từ camera đến completion. *
 
 ```
 app/        Expo SDK 58 + expo-router (React Native 0.88, React 19.3, TypeScript strict)
-  src/app/          route = màn hình: index, scan, discovery, prelude, story, quiz, complete, _layout
-  src/components/   Button/IconButton, ChoiceOption, SceneImage, RoadmapSheet
+  src/app/          route = màn hình: index, scan (quét + nhận diện), prelude, story, quiz, complete, library, badges, _layout
+  src/components/   Button/IconButton, ChoiceOption, SceneImage, RoadmapSheet, Trail (đường ánh sáng), Illustrations (SVG tạm thay hình 3D)
   src/lib/          api.ts (types + client), store.ts (zustand, polling), useNarration.ts, history.ts, haptics.ts
   src/theme.ts      design tokens — KHÔNG hard-code màu/spacing ở nơi khác
   AGENTS.md         quy tắc riêng của Expo (đọc trước khi đụng API Expo/RN)
@@ -38,7 +38,7 @@ cd server && npx tsc                           # typecheck
 # App
 cd app && npm install                          # .npmrc có legacy-peer-deps=true (bắt buộc, xung đột peer react-dom)
 cd app && npx expo start                       # điện thoại thật qua Expo Go, cùng Wi-Fi
-cd app && npx expo start --web --port 8090     # chạy trên máy dev (8081 thường bị chiếm)
+cd app && npx expo start --web --port 8090     # chạy trên máy dev (8081 thường bị chiếm). KHÔNG đặt CI=1: Metro sẽ tắt theo dõi file và phát code cũ
 cd app && npx tsc --noEmit && npx expo lint    # PHẢI sạch trước khi báo xong
 cd app && npx expo-doctor                      # phải 20/20
 cd app && npx expo export --platform android --output-dir <tmp>   # bắt lỗi resolve module mà tsc không thấy
@@ -94,14 +94,17 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 
 ## Design tokens (`app/src/theme.ts`)
 
-Brand Blue `#1A53CD` (CTA, active, progress) · Deep Navy `#0F2452` (heading) · nền `#FFFFFF`/`#F6F9FF` · Soft Surface `#EAF2FF` · Success Mint `#10B0A0` (dùng tiết chế) · Body `#23334E` · Muted `#5B6B85` · Divider `#DEE8F6`.
-Font Inter (400/500/600/700), lưới 4/8dp, radius card 12–20. Tránh "AI slop": không glow, không gradient dày, pill chỉ cho tag/CTA có lý do.
+Brand Blue `#1A53CD` (CTA, active, progress) · Deep Navy `#0F2452` (heading, khối câu hỏi bí ẩn) · nền `#FFFFFF`/`#F6F9FF` · Soft Surface `#EAF2FF` · Success Mint `#10B0A0` (dùng tiết chế) · Body `#23334E` · Muted `#5B6B85` · Divider `#DEE8F6`.
+**Lumen Yellow `#FFC93C`** (giao diện v2 đã duyệt): trạng thái "sáng" của đường ánh sáng, đáp án đang chọn trên nền navy, sao/huy hiệu. Chỉ làm NỀN, không làm màu chữ trên nền trắng.
+Font **Be Vietnam Pro** (400–800; tiêu đề dùng 800), lưới 4/8dp, radius card 16–24. Motif xuyên suốt: "Đường ánh sáng" (`components/Trail.tsx`): nút xong = xanh + tích, đang ở = vàng, chưa tới = vòng rỗng, khóa = ổ khóa. Tránh "AI slop": không glow, không gradient dày.
+Thiết kế tham chiếu: canvas Claude Design "LumosLab – Đề xuất giao diện v2" + mockup người dùng đã duyệt.
 
 ## Quy ước code
 
 - Route chỉ nằm trong `app/src/app/`; code khác để ngoài. Import bằng alias `@/`.
 - **React Compiler lint đang bật:** không đọc `ref.current` trong render, không `setState` đồng bộ trong effect, tránh `useMemo`/`useCallback` thủ công lệch dependency. Giá trị Animated/PanResponder tạo bằng `useState(() => …)`. Riêng gán `player.muted` có eslint-disable kèm lý do, giữ nguyên.
 - RN 0.88: **`StyleSheet.absoluteFillObject` đã bị xóa**, dùng `StyleSheet.absoluteFill`.
+- RN style: `paddingTop` cụ thể ở style gốc **thắng** `padding` viết tắt ở style ghi đè. Ghi đè thì ghi rõ từng cạnh.
 - Gesture dùng FlatList `pagingEnabled` + `PanResponder` có sẵn, **không** dùng react-native-gesture-handler (v3 đổi hẳn API) hay @gorhom/bottom-sheet. Giữ app chạy được trên Expo Go: chỉ dùng module có trong Expo Go.
 - Comment và chuỗi UI viết tiếng Việt; tên biến tiếng Anh.
 
@@ -121,6 +124,9 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 - Toàn bộ AI dùng một key Gemini; model cấu hình qua env, xem `.env.example`.
 
 ## Còn thiếu so với spec
+
+- Hình minh họa 3D trong mockup (hero trang chủ, huy hiệu): đang dùng SVG tạm trong `Illustrations.tsx`, chờ file PNG gốc.
+- Ô "Thử thách Quiz" và "Lộ trình học" ở trang chủ: "Sắp ra mắt".
 
 - P1 parallax con quay hồi chuyển: chưa làm. Nút tắt haptic: chưa có.
 - Xem truyện offline trên thiết bị: chưa có (cache mới chỉ ở server).

@@ -37,6 +37,7 @@ export interface Plan {
   prelude_narration: string;
   mystery_question: Choice;
   timeline_mode: 'historical' | 'process';
+  concept?: { name: string; definition: string };
   character_sheet: string;
   scenes: Scene[];
   quiz: QuizItem[];

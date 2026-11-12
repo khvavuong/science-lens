@@ -59,6 +59,10 @@ QUIZ
 - Hỏi về hiểu bài, không hỏi chi tiết vụn vặt như năm tháng.
 - explanation 1–2 câu, giọng khích lệ.
 
+KHÁI NIỆM CHÍNH (concept)
+- name: tên khái niệm khoa học chính của câu chuyện, 1–4 từ (ví dụ: "Lực hấp dẫn", "Quang hợp").
+- definition: định nghĩa một câu, tối đa 20 từ, trẻ 7–12 tuổi hiểu được.
+
 MYSTERY QUESTION
 - Một câu hỏi gợi tò mò, 3 lựa chọn, đáp án được hé lộ trong câu chuyện; teaser không tiết lộ đáp án.
 
@@ -80,6 +84,11 @@ export const PLAN_SCHEMA = {
       required: ['question', 'options', 'answer_index'],
     },
     timeline_mode: { type: 'string', enum: ['historical', 'process'] },
+    concept: {
+      type: 'object',
+      properties: { name: str, definition: str },
+      required: ['name', 'definition'],
+    },
     character_sheet: str,
     scenes: {
       type: 'array',
@@ -114,7 +123,7 @@ export const PLAN_SCHEMA = {
       },
     },
   },
-  required: ['safe', 'title', 'teaser', 'prelude_narration', 'mystery_question', 'timeline_mode', 'character_sheet', 'scenes', 'quiz'],
+  required: ['safe', 'title', 'teaser', 'prelude_narration', 'mystery_question', 'timeline_mode', 'concept', 'character_sheet', 'scenes', 'quiz'],
 };
 
 export const IMAGE_STYLE_BASE = `Children's science picture-book illustration, soft 2.5D digital painting, gentle rounded shapes, clean confident linework, friendly and warm mood. Bright natural daylight, soft shadows, airy light background with plenty of white space. Palette: clean whites and pale blue (#F6F9FF, #EAF2FF), accents of brand blue (#1A53CD) and deep navy (#0F2452), small touches of mint (#10B0A0) and warm sunlight yellow. Low-to-medium detail, one clear focal subject, simple uncluttered background. Scientifically accurate depiction of objects and phenomena, shown in a way a 7-12 year old can understand. Vertical 9:16 portrait composition. Main subject placed in the central upper two-thirds; keep the bottom 30% calm and low-detail. No text anywhere in the image.`;

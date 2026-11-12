@@ -21,6 +21,9 @@ cd server && npm install && npm run dev
 
 # 2. App (terminal khác)
 cd app && npm install && npx expo start
+
+# Hoặc chạy trên trình duyệt máy dev (không đặt CI=1, nếu không Metro sẽ không reload)
+cd app && npx expo start --web --port 8090
 ```
 
 Quét QR bằng Expo Go (Android) hoặc Camera (iOS). App tự tìm backend theo IP máy đang chạy `expo start`, cổng 8787.
@@ -32,13 +35,13 @@ Nếu bản Expo Go trên máy chưa hỗ trợ SDK 58, chạy development build
 
 | Route | Màn hình | Ghi chú |
 |---|---|---|
-| `/` | Home | CTA quét, danh sách hành trình đã làm (mở lại từ cache server) |
-| `/scan` | Camera | Khung ngắm, chụp, chọn từ thư viện, đổi camera; xin quyền đúng lúc, từ chối vẫn chọn ảnh được |
-| `/discovery` | Nhận diện | Ảnh + tên đồ vật, sửa tên/chọn gợi ý khi không chắc; danh sách công việc thật (không % giả). **Bắt đầu lập truyện ngay khi nhận diện xong**, không chờ bấm xác nhận |
-| `/prelude` | Mở đầu | Teaser, voice mở đầu, Câu hỏi bí ẩn, roadmap preview. Nút vào truyện mở khi cảnh 1 sẵn sàng (tối đa chờ 25s) |
-| `/story` | Story player | Vuốt ngang đổi cảnh, chạm để play/pause, giữ để ẩn chữ, vuốt lên ở tay nắm mở Roadmap. Phụ đề bám theo thời gian audio; hết lời kể tự sang cảnh sau |
-| `/quiz` | Thử thách | 1 câu/màn, chọn → Kiểm tra → giải thích; đúng/sai có icon + chữ, không chỉ dùng màu |
-| `/complete` | Hoàn thành | Điểm, huy hiệu, đáp án câu hỏi bí ẩn, các ý đã học; khám phá tiếp / xem lại |
+| `/` | Trang chủ | Hero, nút quét, 4 ô: Kho khám phá, Bảng thành tích (đã có), Thử thách Quiz, Lộ trình học (sắp ra mắt) |
+| `/scan` | Quét + nhận diện | Camera → chụp/chọn ảnh → ảnh giữ full màn, thẻ "Mình nhận ra đây là…" trượt lên; sửa tên/chọn gợi ý. **Bắt đầu lập truyện ngay khi nhận diện xong** |
+| `/prelude` | Mở đầu | Ảnh đồ vật có vành quỹ đạo, Câu hỏi bí ẩn (khối navy), tiến trình chuẩn bị dạng đường ánh sáng. Vào truyện khi cảnh 1 sẵn sàng (tối đa chờ 25s) |
+| `/story` | Xem truyện | Vuốt ngang đổi cảnh, chạm để play/pause, giữ để ẩn chữ, vuốt lên ở tay nắm mở Hành trình. Phụ đề kiểu karaoke bám theo audio |
+| `/quiz` | Thử thách | Tiến độ 1–2–3, phản hồi trượt lên từ dưới; đúng/sai có icon + chữ |
+| `/complete` | Hoàn thành | Huy hiệu, sao, "Bạn đã hiểu thêm về…" (trường `concept`), điều mang về |
+| `/library`, `/badges` | Kho khám phá, Bảng thành tích | Đọc từ lịch sử lưu trên máy |
 
 ## Pipeline AI (server)
 
