@@ -1,0 +1,56 @@
+{
+  "expo": {
+    "name": "LumosLab",
+    "slug": "lumoslab",
+    "scheme": "lumoslab",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFFFFF",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.lumoslab"
+    },
+    "android": {
+      "package": "app.lumoslab",
+      "adaptiveIcon": {
+        "backgroundColor": "#EAF2FF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "LumosLab cần camera để bạn chụp một đồ vật và khám phá câu chuyện khoa học phía sau nó.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "LumosLab cần truy cập ảnh để bạn chọn một đồ vật muốn khám phá.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-image",
+      "expo-status-bar",
+      "expo-font",
+      "expo-asset"
+    ]
+  }
+}
