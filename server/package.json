@@ -1,0 +1,24 @@
+{
+  "name": "lumoslab-server",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node --env-file=../.env --watch --import tsx src/index.ts",
+    "start": "node --env-file=../.env --import tsx src/index.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.1",
+    "@fastify/static": "^10.1.10",
+    "@google/genai": "^3.2.0",
+    "fastify": "^5.12.8",
+    "nanoid": "^6.0.2",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "type": "module",
+  "private": true
+}
