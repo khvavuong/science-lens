@@ -162,7 +162,7 @@ export async function planStory(label: string): Promise<Plan> {
   return hedged(config.models.planner, 'plan', 12_000, 45_000, async (model, abortSignal) => {
     const r = await ai.models.generateContent({
       model,
-      contents: `Vật thể trẻ vừa chụp: "${label}". Hãy lập kế hoạch câu chuyện.`,
+      contents: `The object photographed by the child is "${label}". Plan one science story about this object. Follow the system instructions and return the required JSON.`,
       config: {
         abortSignal,
         systemInstruction: plannerSystem(config.video.enabled ? config.video.maxScenes : 0),
