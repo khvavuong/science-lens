@@ -39,16 +39,18 @@ export default function Prelude() {
   const { silence } = voice;
   useFocusEffect(useCallback(() => () => silence(), [silence]));
 
-  const [waitedEnough, setWaitedEnough] = useState(false);
+  const plannedStoryId = plan ? story?.id : undefined;
+  const [waitedStoryId, setWaitedStoryId] = useState<string>();
   useEffect(() => {
-    if (!plan) return;
-    const t = setTimeout(() => setWaitedEnough(true), MAX_WAIT_MS);
+    if (!plannedStoryId) return;
+    // Polling thay đối tượng plan, nhưng bộ đếm chỉ chạy một lần cho mỗi truyện.
+    const t = setTimeout(() => setWaitedStoryId(plannedStoryId), MAX_WAIT_MS);
     return () => clearTimeout(t);
-  }, [plan]);
+  }, [plannedStoryId]);
 
   const s1 = story?.assets.scenes[0];
   const scene1Ready = !!s1 && s1.image.status !== 'pending' && s1.audio.status !== 'pending';
-  const canStart = !!plan && (scene1Ready || waitedEnough);
+  const canStart = !!plannedStoryId && (scene1Ready || waitedStoryId === plannedStoryId);
   const failed = !!storyError || story?.status === 'error' || story?.status === 'unsafe';
 
   const enter = () => {
