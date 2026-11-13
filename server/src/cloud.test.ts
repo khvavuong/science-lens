@@ -2,6 +2,19 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { test } from 'node:test';
 import { setTimeout as delay } from 'node:timers/promises';
+import type { Story } from './types.js';
+
+test('polling continues for pending video after image and narration finish', async () => {
+  process.env.GEMINI_KEY ||= 'test-only';
+  const { unfinished, slots } = await import('./cloud.js');
+  const s: Story = { id: 'test', label: 'test', createdAt: 0, status: 'ready', assets: {
+    prelude_audio: { status: 'ready' }, scenes: [{ image: { status: 'ready' }, audio: { status: 'ready' }, video: { status: 'pending' } }],
+  } };
+  assert.equal(unfinished(s), true);
+  assert.equal(slots(s).length, 4);
+  s.assets.scenes[0].video!.status = 'error';
+  assert.equal(unfinished(s), false);
+});
 
 test('cloud API rejects unauthorized calls and invalid input without calling providers', async () => {
   const port = 18788;

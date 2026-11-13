@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { waitUntil } from '@vercel/functions';
 import { randomUUID } from 'node:crypto';
-import { generateImage, planStory, synthesize, QuotaError } from './gemini.js';
+import { generateImage, generateVideo, planStory, synthesize, QuotaError } from './gemini.js';
 import type { Asset, Story } from './types.js';
 
 export const cloudEnabled = !!process.env.SUPABASE_URL;
@@ -10,7 +10,7 @@ const db = cloudEnabled ? createClient(process.env.SUPABASE_URL!, process.env.SU
   global: { fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(15_000) }) },
 }) : undefined;
 const bucket = 'story-media';
-export const slots = (s: Story) => [s.assets.prelude_audio, ...s.assets.scenes.flatMap(x => [x.image, x.audio])];
+export const slots = (s: Story) => [s.assets.prelude_audio, ...s.assets.scenes.flatMap(x => [x.image, x.audio, ...(x.video ? [x.video] : [])])];
 export const unfinished = (s: Story) => s.status === 'planning' || (s.status === 'ready' && slots(s).some(a => a.status === 'pending'));
 
 export async function cloudGet(id: string): Promise<Story | undefined> {
@@ -61,7 +61,7 @@ async function step(id: string) {
       else {
         s.plan = plan;
         s.status = 'ready';
-        s.assets.scenes = plan.scenes.map(() => ({ image: { status: 'pending' }, audio: { status: 'pending' } }));
+        s.assets.scenes = plan.scenes.map(sc => ({ image: { status: 'pending' }, audio: { status: 'pending' }, ...(sc.video_worthy ? { video: { status: 'pending' } as Asset } : {}) }));
       }
     } else if (s.status === 'ready' && s.plan) {
       const jobs = [
@@ -70,6 +70,16 @@ async function step(id: string) {
           { asset: s.assets.scenes[i].image, make: async () => ({ data: await generateImage(scene.image_prompt, s.plan!.character_sheet), ext: 'jpg', durationMs: undefined }) },
           { asset: s.assets.scenes[i].audio, make: () => synthesize(scene.narration) },
         ]),
+        ...s.plan.scenes.flatMap((scene, i) => {
+          const slot = s.assets.scenes[i];
+          return slot.video ? [{ asset: slot.video, make: async () => {
+            if (slot.image.status !== 'ready' || slot.audio.status !== 'ready' || !slot.image.url || !scene.motion_prompt) throw new Error('Missing video prerequisites');
+            const frame = await db!.storage.from(bucket).download(slot.image.url.replace(/^\/media\//, ''));
+            if (frame.error) throw frame.error;
+            const data = await generateVideo(Buffer.from(await frame.data.arrayBuffer()), scene.motion_prompt, (slot.audio.durationMs ?? 10_000) / 1000 + 1);
+            return { data, ext: 'mp4', durationMs: undefined };
+          } }] : [];
+        }),
       ];
       const job = jobs.find(j => j.asset.status === 'pending');
       if (job) {
@@ -77,7 +87,7 @@ async function step(id: string) {
         const output = await job.make();
         const file = `${id}/${randomUUID()}.${output.ext}`;
         const { error } = await db!.storage.from(bucket).upload(file, output.data, {
-          contentType: output.ext === 'jpg' ? 'image/jpeg' : output.ext === 'mp3' ? 'audio/mpeg' : 'audio/wav',
+          contentType: output.ext === 'jpg' ? 'image/jpeg' : output.ext === 'mp3' ? 'audio/mpeg' : output.ext === 'mp4' ? 'video/mp4' : 'audio/wav',
           cacheControl: '604800',
         });
         if (error) throw error;
@@ -97,7 +107,7 @@ async function step(id: string) {
 }
 
 export async function mediaRedirect(path: string) {
-  if (!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.(jpg|mp3|wav)$/.test(path)) return undefined;
+  if (!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.(jpg|mp3|wav|mp4)$/.test(path)) return undefined;
   const { data, error } = await db!.storage.from(bucket).createSignedUrl(path, 3600);
   if (error) return undefined;
   return data.signedUrl;

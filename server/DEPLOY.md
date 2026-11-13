@@ -1,7 +1,7 @@
 # Vercel + Supabase (personal iPhone pilot)
 
 Deploy `server/` as the Vercel project root, Node 22, Fastify / Fluid Compute, maxDuration 300 seconds.
-Apply `../supabase/migrations/*_cloud_story_jobs.sql` once to a dedicated Supabase project.
+Apply both migrations in `../supabase/migrations/` to a dedicated Supabase project (stories/leases and private MP4 storage).
 
 Server-only environment variables:
 - `GEMINI_KEY`
@@ -17,7 +17,9 @@ Stories live in Postgres; media uses the private `story-media` bucket with signe
 Camera images are never persisted. Media URLs are bearer capabilities: anyone with the URL may read that media.
 Database and RPC access are service-role only; no client RLS policies is intentional.
 
-Each poll can claim one planning/image/audio step using an expiring database lease.
+Each poll can claim one planning/image/audio/video step using an expiring database lease.
+Video steps run after images/audio, use the stored image as their first frame, and share the 200-second model-chain budget.
+Video generation has not been validated against the live provider; errors retain the image fallback.
 `waitUntil` keeps that invocation alive after response; each model chain is capped at 200 seconds.
 Claims expire after 240 seconds; a lease token fences late writes. A killed step is retried on a later poll.
 Errors settle to the existing app fallback; retry resets errors durably before returning.
