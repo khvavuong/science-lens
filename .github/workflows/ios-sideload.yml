@@ -26,6 +26,7 @@ jobs:
       - run: test -n "$EXPO_PUBLIC_API_URL"
       - run: npm ci --no-audit --no-fund
       - run: npm run typecheck && npm run lint
+      - run: node app.config.test.cjs
       - run: npx expo prebuild --platform ios --no-install
       - run: pod install --project-directory=ios
       - name: Build unsigned device archive
