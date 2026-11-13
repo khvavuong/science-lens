@@ -1,5 +1,4 @@
 import cors from '@fastify/cors';
-import fastifyStatic from '@fastify/static';
 import Fastify from 'fastify';
 import { networkInterfaces } from 'node:os';
 import { timingSafeEqual } from 'node:crypto';
@@ -17,7 +16,7 @@ app.addHook('onRequest', async (req, reply) => {
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return reply.code(401).send({ error: 'Ứng dụng chưa được cấp quyền.' });
 });
 await app.register(cors, { origin: true });
-if (!cloudEnabled) await app.register(fastifyStatic, { root: config.mediaDir, prefix: '/media/', maxAge: '7d', immutable: true });
+if (!cloudEnabled) await app.register((await import('@fastify/static')).default, { root: config.mediaDir, prefix: '/media/', maxAge: '7d', immutable: true });
 else app.get<{ Params: { '*': string } }>('/media/*', async (req, reply) => {
   const url = await mediaRedirect(req.params['*']);
   return url ? reply.redirect(url) : reply.code(404).send({ error: 'Không tìm thấy' });
