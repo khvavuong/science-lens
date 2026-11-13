@@ -22,7 +22,10 @@ else app.get<{ Params: { '*': string } }>('/media/*', async (req, reply) => {
   return url ? reply.redirect(url) : reply.code(404).send({ error: 'Không tìm thấy' });
 });
 
-app.get('/api/health', async () => ({ ok: true, models: config.models, video: config.video, cooldown: modelStatus() }));
+app.get('/api/health', async () => ({
+  ok: true, models: config.models, video: config.video, cooldown: modelStatus(),
+  tts: config.elevenlabs.key ? { provider: 'elevenlabs', voiceId: config.elevenlabs.voiceId, models: config.elevenlabs.models } : { provider: 'gemini' },
+}));
 
 // Ảnh chỉ dùng trong bộ nhớ để nhận diện, KHÔNG lưu xuống đĩa.
 app.post<{ Body: { imageBase64: string; mimeType?: string } }>('/api/recognize', async (req, reply) => {
