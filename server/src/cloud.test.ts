@@ -43,3 +43,12 @@ test('cloud API rejects unauthorized calls and invalid input without calling pro
     assert.equal((await fetch(`http://127.0.0.1:${port}/media/invalid`)).status, 404);
   } finally { child.kill(); }
 });
+
+test('recap downloads reject external URLs and traversal before storage access', async () => {
+  process.env.GEMINI_KEY ||= 'test-only';
+  const { downloadVideo, downloadNarration } = await import('./cloud.js');
+  for (const path of ['https://example.com/file.mp4', '/media/../../secret.wav', '/media/not-an-id/file.mp3']) {
+    await assert.rejects(downloadVideo(path));
+    await assert.rejects(downloadNarration(path));
+  }
+});

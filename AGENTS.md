@@ -138,3 +138,10 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 - P1 parallax con quay hồi chuyển: chưa làm. Nút tắt haptic: chưa có.
 - Xem truyện offline trên thiết bị: chưa có (cache mới chỉ ở server).
 - Video AI: code xong, chưa gọi API thật lần nào (chờ cấp quyền/billing cho key). Cần test trên máy thật: chuyển ảnh → video, đồng bộ với lời kể, video không cắt giọng kể trên iOS.
+
+## Cập nhật trải nghiệm 13/11/2026
+
+- Lời kể trong Prelude/Story dùng một voice tiếng Việt cố định của thiết bị, không trộn TTS Gemini theo tình trạng tải. Vuốt/nút chuyển cảnh tự phát lời kể cảnh mới, không tự chuyển cảnh. `useNarration` sở hữu cleanup khi mất focus; không thêm cleanup trùng ở màn hình.
+- Video nằm sau quiz. Recap ghép ảnh chụp + clip AI + chữ vui nhộn + điểm quiz thành MP4 dọc có tiếng. Gemini hết credit thì dùng audio có sẵn của cảnh; không thể tạo lời thoại meme mới khi provider trả 402.
+- FFmpeg Linux trên Vercel không có `drawtext`: render chữ PNG bằng sharp/Pango rồi overlay. Phải kiểm tra export trên cloud, không suy từ test Windows.
+- Test hồi quy lời kể: `cd app; node --test narration.test.cjs`. Test renderer/API: `cd server; node --import tsx --test src/recap.test.ts src/cloud.test.ts`.
