@@ -39,14 +39,16 @@ async function withModels<T>(
   fn: (model: string, signal: AbortSignal) => Promise<T>,
 ): Promise<T> {
   let last: unknown;
+  const deadline = Date.now() + 200_000;
   for (const model of models) {
     if ((cooldownUntil.get(model) ?? 0) > Date.now()) {
       last ??= new QuotaError(`${model}: đang hết quota`);
       continue;
     }
     for (let attempt = 0; attempt < 3; attempt++) {
+      if (Date.now() >= deadline) throw new TimeoutError('Quá thời gian tạo nội dung');
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const timer = setTimeout(() => ctrl.abort(), Math.min(timeoutMs, deadline - Date.now()));
       try {
         return await Promise.race([
           fn(model, ctrl.signal),
@@ -59,14 +61,16 @@ async function withModels<T>(
         if (code === 402) {
           // Hết credit trả trước của project: model nào cũng lỗi như nhau, không thử lại.
           cooldownUntil.set(model, Date.now() + 60 * 60_000);
-          last = new QuotaError(`${model}: hết credit (402), cần nạp thêm ở AI Studio`);
+          last = new QuotaError(`${model}: hết credit (402), cần nạp thêm`);
           break;
         }
         if (code === 429) {
           // Free tier không có quyền (limit: 0) hoặc hết quota ngày → bỏ qua model này 1 giờ.
-          if (/limit: 0\b/.test(msg) || /per day/i.test(msg)) {
+          // Chạm spending cap tháng của project → mọi model đều lỗi đến khi nâng cap ở AI Studio.
+          if (/limit: 0\b/.test(msg) || /per day/i.test(msg) || /spending cap/i.test(msg)) {
             cooldownUntil.set(model, Date.now() + 60 * 60_000);
-            last = new QuotaError(`${model}: hết quota (${/limit: 0\b/.test(msg) ? 'cần bật billing' : 'giới hạn theo ngày'})`);
+            const why = /limit: 0\b/.test(msg) ? 'cần bật billing' : /spending cap/i.test(msg) ? 'chạm spending cap tháng' : 'giới hạn theo ngày';
+            last = new QuotaError(`${model}: hết quota (${why})`);
             break;
           }
           if (attempt === 2) cooldownUntil.set(model, Date.now() + 60_000); // giới hạn theo phút
@@ -162,7 +166,7 @@ export async function planStory(label: string): Promise<Plan> {
   return hedged(config.models.planner, 'plan', 12_000, 45_000, async (model, abortSignal) => {
     const r = await ai.models.generateContent({
       model,
-      contents: `Vật thể trẻ vừa chụp: "${label}". Hãy lập kế hoạch câu chuyện.`,
+      contents: `The object photographed by the child is "${label}". Plan one science story about this object. Follow the system instructions and return the required JSON.`,
       config: {
         abortSignal,
         systemInstruction: plannerSystem(config.video.enabled ? config.video.maxScenes : 0),
@@ -266,7 +270,47 @@ export async function generateVideo(image: Buffer, motionPrompt: string, seconds
 
 /** TTS tiếng Việt → mp3 (hoặc wav nếu không có ffmpeg) + thời lượng. */
 export async function synthesize(text: string): Promise<{ data: Buffer; ext: 'mp3' | 'wav'; durationMs: number }> {
-  const { pcm, rate } = await withModels(config.models.tts, 'tts', 45_000, async (model, abortSignal) => {
+  const { pcm, rate } = config.elevenlabs.key ? await elevenLabsPcm(text) : await geminiPcm(text);
+  const durationMs = Math.round((pcm.length / 2 / rate) * 1000);
+  try {
+    return { data: await pcmToMp3(pcm, rate), ext: 'mp3', durationMs };
+  } catch {
+    return { data: wavFromPcm(pcm, rate), ext: 'wav', durationMs };
+  }
+}
+
+/**
+ * ElevenLabs TTS → PCM 16-bit mono 24kHz (cùng định dạng với Gemini để dùng chung bước tính độ dài + mp3).
+ * Không chuyển sang Gemini khi lỗi: asset báo `error` → app đọc bằng expo-speech, phụ đề vẫn chạy.
+ */
+async function elevenLabsPcm(text: string): Promise<{ pcm: Buffer; rate: number }> {
+  const rate = 24000;
+  const { key, voiceId, models } = config.elevenlabs;
+  const pcm = await withModels(models, 'tts-elevenlabs', 45_000, async (model, signal) => {
+    const res = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=pcm_${rate}`,
+      {
+        method: 'POST',
+        signal,
+        headers: { 'xi-api-key': key, 'content-type': 'application/json' },
+        body: JSON.stringify({ text, model_id: model, language_code: 'vi' }),
+      },
+    );
+    if (!res.ok) {
+      // Gắn status để withModels phân loại (429/5xx thử lại, 4xx khác bỏ qua).
+      const err = new Error(`ElevenLabs ${res.status}: ${(await res.text()).slice(0, 300)}`);
+      (err as any).status = res.status;
+      throw err;
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    if (buf.length < 1000) throw new Error('ElevenLabs không trả audio');
+    return buf;
+  });
+  return { pcm, rate };
+}
+
+async function geminiPcm(text: string): Promise<{ pcm: Buffer; rate: number }> {
+  return withModels(config.models.tts, 'tts', 45_000, async (model, abortSignal) => {
     const r = await ai.models.generateContent({
       model,
       // Chỉ gửi lời kể: model TTS đọc nguyên văn mọi chữ, kể cả câu chỉ dẫn giọng.
@@ -281,12 +325,6 @@ export async function synthesize(text: string): Promise<{ data: Buffer; ext: 'mp
     if (!part?.inlineData?.data) throw new Error('Model không trả audio');
     return toPcm(Buffer.from(part.inlineData.data, 'base64'), part.inlineData.mimeType ?? '');
   });
-  const durationMs = Math.round((pcm.length / 2 / rate) * 1000);
-  try {
-    return { data: await pcmToMp3(pcm, rate), ext: 'mp3', durationMs };
-  } catch {
-    return { data: wavFromPcm(pcm, rate), ext: 'wav', durationMs };
-  }
 }
 
 function toPcm(buf: Buffer, mime: string): { pcm: Buffer; rate: number } {
@@ -319,6 +357,7 @@ function pcmToMp3(pcm: Buffer, rate: number): Promise<Buffer> {
     const p = spawn('ffmpeg', ['-loglevel', 'error', '-f', 's16le', '-ar', String(rate), '-ac', '1', '-i', 'pipe:0', '-b:a', '64k', '-f', 'mp3', 'pipe:1']);
     const chunks: Buffer[] = [];
     p.stdout.on('data', (c) => chunks.push(c));
+    p.stdin.on('error', reject);
     p.on('error', reject);
     p.on('close', (code) => (code === 0 ? resolve(Buffer.concat(chunks)) : reject(new Error('ffmpeg ' + code))));
     p.stdin.end(pcm);

@@ -1,8 +1,9 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { tmpdir } from 'node:os';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const root = process.env.VERCEL ? join(tmpdir(), 'lumoslab') : join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const config = {
   port: Number(process.env.PORT ?? 8787),
@@ -16,6 +17,14 @@ export const config = {
     tts: (process.env.MODEL_TTS ?? 'gemini-3.8-flash-tts,gemini-3.8-flash-lite-tts,gemini-3.1-flash-tts-preview,gemini-2.5-flash-preview-tts,gemini-2.5-pro-preview-tts').split(','),
   },
   ttsVoice: process.env.TTS_VOICE ?? 'Kore',
+  // Có key ElevenLabs → giọng kể chỉ dùng ElevenLabs; lỗi thì app tự đọc bằng giọng máy (expo-speech).
+  // Không có key → quay về Gemini TTS ở trên.
+  elevenlabs: {
+    key: process.env.ELEVEN_LAB_KEY ?? process.env.ELEVENLABS_API_KEY ?? '',
+    // "Saigon Lily": nữ, giọng miền Nam, nhẹ nhàng.
+    voiceId: process.env.ELEVENLABS_VOICE_ID ?? 'WFDoCi084FlAxSbpBEfC',
+    models: (process.env.ELEVENLABS_MODEL ?? 'eleven_v4,eleven_turbo_v2_5').split(','),
+  },
   // Video (Gemini Omni Flash, không có free tier ~ $0.07/giây ở 720p).
   video: {
     enabled: process.env.VIDEO_ENABLED !== '0',

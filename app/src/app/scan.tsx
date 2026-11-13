@@ -11,13 +11,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
+import { captureCrop } from '@/lib/captureCrop';
 import { haptic } from '@/lib/haptics';
 import { useJourney } from '@/lib/store';
 import { colors, font, radius, space, type } from '@/theme';
 
 /** Thu nhỏ ảnh còn ~768px để gửi nhận diện nhanh (ảnh chỉ dùng tạm, không lưu trên server). */
-async function prepare(uri: string) {
-  const ctx = ImageManipulator.manipulate(uri).resize({ width: 768 });
+async function prepare(uri: string, crop?: ReturnType<typeof captureCrop>) {
+  const ctx = ImageManipulator.manipulate(uri);
+  if (crop) ctx.crop(crop);
+  ctx.resize({ width: 768 });
   const img = await ctx.renderAsync();
   const out = await img.saveAsync({ format: SaveFormat.JPEG, compress: 0.72, base64: true });
   return { uri: out.uri, base64: out.base64! };
@@ -35,6 +38,7 @@ export default function Scan() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [busy, setBusy] = useState(false);
   const [focused, setFocused] = useState(true);
+  const [viewport, setViewport] = useState({ width: 0, height: 0 });
   const cam = useRef<CameraView>(null);
   const { photo, recognition, recognizeError, label, story, storyError, setPhoto, reset, runRecognition, startStory } = useJourney();
   const [editing, setEditing] = useState(false);
@@ -44,9 +48,9 @@ export default function Scan() {
   useFocusEffect(useCallback(() => { setFocused(true); setBusy(false); return () => setFocused(false); }, []));
   useEffect(() => { if (recognition?.safe) haptic.success(); }, [recognition]);
 
-  const go = async (uri: string) => {
+  const go = async (uri: string, crop?: ReturnType<typeof captureCrop>) => {
     try {
-      setPhoto(await prepare(uri));
+      setPhoto(await prepare(uri, crop));
       setEditing(false);
       void useJourney.getState().runRecognition();
     } catch {
@@ -63,7 +67,7 @@ export default function Scan() {
     haptic.tap();
     try {
       const pic = await cam.current.takePictureAsync({ quality: 0.8 });
-      await go(pic.uri);
+      await go(pic.uri, captureCrop(pic, viewport));
     } catch {
       setBusy(false);
     }
@@ -123,10 +127,10 @@ export default function Scan() {
   const storyFailed = !!storyError || story?.status === 'error';
 
   return (
-    <View style={styles.root}>
+    <View style={styles.root} onLayout={e => setViewport(e.nativeEvent.layout)}>
       <StatusBar style="light" />
       {photo ? (
-        <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} contentFit="cover" accessibilityLabel="Ảnh bạn vừa chụp" />
+        <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel="Ảnh trong khung bạn vừa chụp" />
       ) : (
         focused && permission?.granted && <CameraView ref={cam} style={StyleSheet.absoluteFill} facing={facing} animateShutter />
       )}
@@ -137,14 +141,14 @@ export default function Scan() {
         <View style={{ width: 44 }} />
       </View>
 
-      <View pointerEvents="none" style={[styles.frameWrap, photo && { paddingBottom: 260 }]}>
+      {!photo && <View pointerEvents="none" style={styles.frameWrap}>
         <View style={styles.frame}>
           <View style={[styles.corner, styles.tl]} />
           <View style={[styles.corner, styles.tr]} />
           <View style={[styles.corner, styles.bl]} />
           <View style={[styles.corner, styles.br]} />
         </View>
-      </View>
+      </View>}
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottomWrap}>
         {photo && (

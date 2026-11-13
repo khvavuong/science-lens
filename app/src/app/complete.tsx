@@ -1,10 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Animated, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { Medal } from '@/components/Illustrations';
+import { DiscoveryShare } from '@/components/DiscoveryShare';
+import { recapKey } from '@/lib/recap';
+import { RecapCard } from '@/components/RecapCard';
 import { haptic } from '@/lib/haptics';
 import { BADGES, badgeFor, saveJourney } from '@/lib/history';
 import { useJourney } from '@/lib/store';
@@ -18,6 +21,9 @@ export default function Complete() {
   const plan = story?.plan;
   const [pop] = useState(() => new Animated.Value(0.6));
 
+  const [completedAt] = useState(() => Date.now());
+  const [sharing, setSharing] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const total = plan?.quiz.length ?? 0;
   const score = plan ? plan.quiz.filter((q, i) => quizAnswers[i] === q.answer_index).length : 0;
   const badge = BADGES[badgeFor(score, total)];
@@ -28,9 +34,9 @@ export default function Complete() {
     if (reduced) pop.setValue(1);
     else Animated.spring(pop, { toValue: 1, useNativeDriver: true, damping: 10, stiffness: 160 }).start();
     void saveJourney({
-      storyId: story.id, label: story.label, title: plan.title, score, total, at: Date.now(),
-      photoUri: photo?.uri, concept: plan.concept?.name,
-    });
+      storyId: story.id, label: story.label, title: plan.title, score, total, at: completedAt,
+      photoUri: photo?.uri, concept: plan.concept?.name, recapKey: photo ? recapKey(photo.uri, quizAnswers) : undefined,
+    }).catch(() => setSaveError('Chưa lưu được khám phá trên thiết bị.'));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!plan) return null;
@@ -38,16 +44,15 @@ export default function Complete() {
   // Truyện tạo trước khi có trường `concept`: lấy đáp án câu hỏi bí ẩn làm tên khái niệm.
   const concept = plan.concept ?? { name: mq.options[mq.answer_index] ?? plan.title, definition: plan.scenes[0]?.key_fact ?? '' };
 
-  const share = () =>
-    Share.share({ message: `Mình vừa khám phá "${plan.title}" trên LumosLab và trả lời đúng ${score} trên ${total} câu!` }).catch(() => {});
-
   return (
     <View style={[styles.root, { paddingTop: insets.top + space.sm }]}>
       <View style={styles.topRow}>
         <IconButton icon="home-outline" label="Về trang chủ" onPress={() => { reset(); router.replace('/'); }} />
-        <IconButton icon="share-outline" label="Chia sẻ kết quả" onPress={share} />
+        <IconButton icon="share-outline" label="Chia sẻ kết quả" onPress={() => setSharing(true)} />
       </View>
 
+      {sharing && story && <DiscoveryShare record={{ storyId: story.id, label: story.label, title: plan.title, score, total, at: completedAt, photoUri: photo?.uri, concept: concept.name }} onClose={() => setSharing(false)} />}
+      {!!saveError && <Text accessibilityRole="alert" style={type.body}>{saveError}</Text>}
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ transform: [{ scale: pop }] }}>
           <Medal uri={photo?.uri} size={132} label={badge.name} />
@@ -90,6 +95,7 @@ export default function Complete() {
             </View>
           ))}
         </View>
+        <RecapCard key={story?.id} />
       </ScrollView>
 
       <View style={[styles.cta, { paddingBottom: insets.bottom + space.sm }]}>
