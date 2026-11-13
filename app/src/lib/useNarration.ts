@@ -132,8 +132,11 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
 
   const didFinish = mode === 'remote' ? st.didJustFinish : mode === 'device' && devState.done;
 
+  /** Vị trí đang đọc (giây) – để video cùng cảnh chạy khớp lời kể. Giọng thiết bị không có vị trí chính xác. */
+  const position = mode === 'remote' ? st.currentTime : 0;
+
   return {
-    mode, playing, intent, frac, chunkIdx, didFinish,
+    mode, playing, intent, frac, chunkIdx, didFinish, position,
     canPlay: mode !== 'loading' && chunks.length > 0,
     toggle: () => (playing ? pause() : play()),
     play, pause, silence,

@@ -40,6 +40,8 @@ NGÔN NGỮ (chỉ tiếng Việt)
 - Số và năm viết bằng chữ số (ví dụ: năm 1666, 100 độ).
 - subtitle_chunks: chia narration thành 2–5 đoạn liên tiếp, nối lại phải đúng bằng narration.
 - Dùng so sánh gần gũi với đời sống trẻ em Việt Nam.
+- Viết hoa theo chuẩn tiếng Việt: title, teaser, tên cảnh, concept.name chỉ viết hoa chữ cái đầu và tên riêng (đúng: "Hành trình đổi màu của quả chuối"; sai: "Hành Trình Đổi Màu Của Quả Chuối").
+- Tên cảnh (title) ngắn, tối đa 6 từ. teaser 1 câu, tối đa 18 từ.
 
 CHÍNH XÁC
 - Mỗi cảnh chỉ MỘT ý chính (key_fact, 1 câu), đúng khoa học.
@@ -57,7 +59,7 @@ AN TOÀN CHO TRẺ EM
 QUIZ
 - Đúng 3 câu, mỗi câu 3–4 lựa chọn, chỉ một đáp án đúng, gắn với một cảnh đã kể (scene_ref = id cảnh).
 - Hỏi về hiểu bài, không hỏi chi tiết vụn vặt như năm tháng.
-- explanation 1–2 câu, giọng khích lệ.
+- explanation 1–2 câu, giọng khích lệ, đi thẳng vào lý do. KHÔNG mở đầu bằng lời khen hay đánh giá ("Chính xác", "Đúng rồi", "Giỏi lắm", "Tiếc quá"...): app đã hiển thị đúng/sai riêng.
 
 KHÁI NIỆM CHÍNH (concept)
 - name: tên khái niệm khoa học chính của câu chuyện, 1–4 từ (ví dụ: "Lực hấp dẫn", "Quang hợp").
@@ -68,7 +70,18 @@ MYSTERY QUESTION
 
 HÌNH ẢNH (viết bằng tiếng Anh)
 - character_sheet: mô tả ngắn, cố định nhân vật/vật thể lặp lại để các cảnh nhất quán. Nhân vật lịch sử vẽ cách điệu, thân thiện, trang phục đúng thời kỳ.
-- image_prompt mỗi cảnh: "[Shot: wide | medium | close-up] of [chủ thể] [hành động/hiện tượng], [bối cảnh], [chi tiết khoa học cần thấy rõ]". Một ý hình ảnh chính, khớp key_fact. Có thể dùng mũi tên, đường chấm, hình cắt lớp; KHÔNG có chữ hay số.`;
+- image_prompt mỗi cảnh: "[Shot: wide | medium | close-up] of [chủ thể] [hành động/hiện tượng], [bối cảnh], [chi tiết khoa học cần thấy rõ]". Một ý hình ảnh chính, khớp key_fact. Có thể dùng mũi tên, đường chấm, hình cắt lớp; KHÔNG có chữ hay số.
+
+VIDEO (viết bằng tiếng Anh)
+- video_worthy = true cho TỐI ĐA {{VIDEO_MAX}} cảnh mà chuyển động giúp hiểu bài rõ hơn hẳn ảnh tĩnh: một quá trình đang diễn ra (nảy mầm, tan chảy, bay hơi, đổi màu), chuyển động vật lý (rơi, lăn, quay, dòng chảy), phản ứng. Cảnh chỉ giới thiệu nhân vật hoặc khung cảnh tĩnh → false.
+- motion_prompt mỗi cảnh (kể cả cảnh false): 1–2 câu mô tả chuyển động bắt đầu từ chính khung hình của image_prompt: chủ thể chuyển động thế nào, máy quay (static, slow push-in, gentle pan). Chuyển động chậm, êm, dễ theo dõi; không cắt cảnh; không thêm nhân vật mới.`;
+
+/** Planner nhận số cảnh video tối đa từ config. */
+export const plannerSystem = (videoMax: number) =>
+  PLANNER_SYSTEM.replace('{{VIDEO_MAX}}', String(Math.max(0, videoMax)));
+
+/** Ghép vào motion_prompt: video không lời, không chữ, cùng phong cách ảnh. */
+export const VIDEO_STYLE = `Animate this children's science picture-book illustration, keeping its exact art style, colors and composition. Smooth, slow, gentle motion; one continuous shot, no cuts, no scene changes. No people speaking, no dialogue, no narration, no singing; only soft ambient sound. No text, letters or numbers appearing. Nothing scary or violent.`;
 
 const str = { type: 'string' };
 export const PLAN_SCHEMA = {
@@ -104,8 +117,10 @@ export const PLAN_SCHEMA = {
           confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
           is_legend: { type: 'boolean' },
           image_prompt: str,
+          video_worthy: { type: 'boolean' },
+          motion_prompt: str,
         },
-        required: ['id', 'title', 'timeline_label', 'narration', 'subtitle_chunks', 'key_fact', 'confidence', 'is_legend', 'image_prompt'],
+        required: ['id', 'title', 'timeline_label', 'narration', 'subtitle_chunks', 'key_fact', 'confidence', 'is_legend', 'image_prompt', 'video_worthy', 'motion_prompt'],
       },
     },
     quiz: {

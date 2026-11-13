@@ -6,15 +6,15 @@ Nguồn yêu cầu sản phẩm: `LumosLab_UIUX_Design_Specification.docx` (gọ
 ## Sản phẩm
 
 App mobile **portrait-only, light-first** cho **trẻ em 7–12 tuổi**, **chỉ tiếng Việt**:
-Scan đồ vật → AI nhận diện → chọn **một** câu chuyện khoa học (4–5 cảnh) → xem cảnh dọc + nghe giọng kể + phụ đề → Roadmap → 3 câu quiz → Completion.
-MVP hackathon: một đường đi trọn vẹn từ camera đến completion. **Ngoài phạm vi:** video AI (P2), mạng xã hội, mini-experiment, bắt đăng nhập.
+Scan đồ vật → AI nhận diện → chọn **một** câu chuyện khoa học (4–5 cảnh) → xem cảnh dọc (ảnh, tối đa 2 cảnh có video) + nghe giọng kể + phụ đề → Roadmap → 3 câu quiz → Completion.
+MVP hackathon: một đường đi trọn vẹn từ camera đến completion. **Ngoài phạm vi:** mạng xã hội, mini-experiment, bắt đăng nhập.
 
 ## Cấu trúc
 
 ```
 app/        Expo SDK 58 + expo-router (React Native 0.88, React 19.3, TypeScript strict)
   src/app/          route = màn hình: index, scan (quét + nhận diện), prelude, story, quiz, complete, library, badges, _layout
-  src/components/   Button/IconButton, ChoiceOption, SceneImage, RoadmapSheet, Trail (đường ánh sáng), Illustrations (SVG tạm thay hình 3D)
+  src/components/   Button/IconButton, ChoiceOption, SceneVisual (ảnh + video), SceneImage, RoadmapSheet, Trail (đường ánh sáng), Illustrations (SVG tạm thay hình 3D)
   src/lib/          api.ts (types + client), store.ts (zustand, polling), useNarration.ts, history.ts, haptics.ts
   src/theme.ts      design tokens — KHÔNG hard-code màu/spacing ở nơi khác
   AGENTS.md         quy tắc riêng của Expo (đọc trước khi đụng API Expo/RN)
@@ -31,6 +31,9 @@ prompts/    tài liệu giải thích prompt (đồng bộ tay với server/src/
 ## Lệnh
 
 ```bash
+# Cần cài sẵn: Node 22, ffmpeg trong PATH (Windows: winget install Gyan.FFmpeg).
+# Thiếu ffmpeg thì TTS lưu WAV (~600KB/cảnh) thay vì MP3 (~90KB).
+
 # Backend (cổng 8787)
 cd server && npm install && npm run dev        # watch mode, đọc ../.env
 cd server && npx tsc                           # typecheck
@@ -67,6 +70,9 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 - **TTS đọc nguyên văn MỌI chữ**: không bao giờ chèn câu chỉ dẫn giọng vào `contents` (đã từng bị đọc thành tiếng). Model TTS không nhận `systemInstruction`. Cách kiểm chứng audio: cho `gemini-2.5-flash` chép lại file.
 - **Free tier:** ảnh có quota = 0 (cần billing); mỗi model TTS khoảng 10 request/ngày. `withModels` coi 429 có `limit: 0` hoặc `per day` là hết quota → cooldown model 1 giờ, chuyển ngay model kế tiếp. Đừng xóa danh sách model dự phòng trong `config.ts`.
 - Thứ tự tạo asset: voice mở đầu → ảnh/voice cảnh 1 → các cảnh còn lại (audio song song 3, ảnh song song 2).
+- **Video** (`gemini-omni-1.2-flash`, gọi qua `ai.interactions.create`, không phải `generateVideos`; Veo 3.1 preview đã ngừng 22/10/2026): planner đánh dấu `video_worthy` cho tối đa `VIDEO_MAX_SCENES` cảnh. Video của một cảnh chỉ chạy khi ảnh (làm khung đầu) và voice (làm độ dài, cộng 1 giây, giới hạn 3–15 giây) của cảnh đó xong; hàng đợi riêng (song song 2), không chặn ảnh/audio. Video có âm thanh gốc nhưng app **luôn tắt tiếng** và dùng `audioMixingMode: 'mixWithOthers'` để không cắt giọng kể. **Không có free tier**: mỗi truyện khoảng $1.5 ở 720p. Tắt bằng `VIDEO_ENABLED=0`.
+- Lỗi 402 (hết credit trả trước) được coi như hết quota: cooldown model 1 giờ. Lỗi 404 (model đã ngừng cho key này, vd. `gemini-2.5-flash` với key tạo sau 11/2026) → bỏ qua model 24 giờ.
+- Key free tier: nhận diện, planner, TTS chạy được; **ảnh và video đều `limit: 0`** → cần bật billing. Thiếu ảnh thì video của cảnh đó bị bỏ qua (`error: 'skipped'`).
 - Prompt planner phải giữ: dấu câu đầy đủ (thiếu thì model bỏ hết dấu phẩy/hỏi), năm viết bằng chữ số, 40–60 từ/cảnh.
 - Test thủ công bằng `curl` lên server **tốn quota thật**; lặp lại cùng label để dùng cache.
 
@@ -84,6 +90,7 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 - **Không chặn UI chờ asset:** không hiển thị % giả; Prelude cho vào truyện khi cảnh 1 sẵn sàng hoặc sau 25s.
 - Fallback bắt buộc, không được để trống:
   - ảnh lỗi → ảnh người dùng chụp + Ken Burns (`SceneImage`)
+  - video chưa xong/lỗi/Reduce Motion → ảnh cảnh + Ken Burns; video về giữa chừng thì chuyển mờ sang và tua khớp lời kể (`SceneVisual`)
   - TTS lỗi → giọng tiếng Việt của máy qua `expo-speech`, phụ đề vẫn chạy
   - camera bị từ chối → chọn ảnh từ thư viện
   - nhận diện sai → sửa tên/chọn gợi ý
@@ -130,4 +137,4 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 
 - P1 parallax con quay hồi chuyển: chưa làm. Nút tắt haptic: chưa có.
 - Xem truyện offline trên thiết bị: chưa có (cache mới chỉ ở server).
-- Ảnh minh họa AI: code xong, chờ bật billing.
+- Video AI: code xong, chưa gọi API thật lần nào (chờ cấp quyền/billing cho key). Cần test trên máy thật: chuyển ảnh → video, đồng bộ với lời kể, video không cắt giọng kể trên iOS.

@@ -58,11 +58,11 @@ export default function Prelude() {
 
   const steps: { label: string; detail?: string; state: NodeState }[] = [
     { label: 'Nhận ra đồ vật', state: 'done' },
-    { label: 'Chọn câu chuyện khoa học', state: failed ? 'skipped' : plan ? 'done' : 'loading' },
+    { label: 'Chọn câu chuyện', state: failed ? 'skipped' : plan ? 'done' : 'loading' },
     {
       label: 'Chuẩn bị giọng kể',
       state: plan ? fromAsset(story?.assets.prelude_audio.status) : 'todo',
-      detail: story?.assets.prelude_audio.status === 'error' ? 'Dùng giọng đọc của máy' : undefined,
+      detail: story?.assets.prelude_audio.status === 'error' ? 'Dùng giọng của máy' : undefined,
     },
     {
       label: 'Vẽ cảnh đầu tiên',
@@ -125,7 +125,7 @@ export default function Prelude() {
                 ))}
               </View>
               <Text style={styles.mysteryHint}>
-                {mysteryChoice === null ? 'Đoán thử nhé! Đáp án nằm trong câu chuyện.' : 'Bạn đã đoán. Xem câu chuyện để biết mình đúng không nhé!'}
+                {mysteryChoice === null ? 'Đoán thử nhé, đáp án có trong truyện.' : 'Nghe truyện để biết đáp án nhé!'}
               </Text>
             </View>
           </>

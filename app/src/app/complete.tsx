@@ -53,7 +53,7 @@ export default function Complete() {
           <Medal uri={photo?.uri} size={132} label={badge.name} />
         </Animated.View>
 
-        <Text style={[type.h1, styles.center]} accessibilityRole="header">Bạn đã đi hết{'\n'}hành trình {story?.label}!</Text>
+        <Text style={[type.h1, styles.center]} accessibilityRole="header">Xong hành trình{'\n'}{story?.label}!</Text>
 
         <View style={styles.stars} accessibilityLabel={`Đúng ${score} trên ${total} câu`}>
           {Array.from({ length: total }, (_, i) => (
@@ -62,14 +62,13 @@ export default function Complete() {
             </View>
           ))}
         </View>
-        <Text style={[styles.score, styles.center]}>Đúng {score} trên {total} câu</Text>
-        <Text style={[type.caption, styles.center, { marginTop: -10 }]}>Huy hiệu mới: {badge.name}</Text>
+        <Text style={[styles.score, styles.center]}>Đúng {score}/{total} câu</Text>
 
         <View style={styles.concept}>
           <View style={styles.conceptHead}>
             <View style={styles.bulb}><Ionicons name="bulb" size={18} color={colors.navy} /></View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.conceptKicker}>Bạn đã hiểu thêm về</Text>
+              <Text style={styles.conceptKicker}>Khái niệm mới</Text>
               <Text style={styles.conceptName}>{concept.name}</Text>
             </View>
           </View>
@@ -77,13 +76,13 @@ export default function Complete() {
           {mysteryChoice !== null && (
             <Text style={styles.mystery}>
               Câu hỏi bí ẩn: {mq.options[mq.answer_index]}.{' '}
-              {mysteryChoice === mq.answer_index ? 'Bạn đã đoán đúng ngay từ đầu!' : 'Giờ thì bạn đã biết rồi!'}
+              {mysteryChoice === mq.answer_index ? 'Bạn đoán đúng từ đầu!' : 'Giờ bạn đã biết rồi!'}
             </Text>
           )}
         </View>
 
         <View style={{ gap: 10 }}>
-          <Text style={type.h2}>Điều bạn mang về</Text>
+          <Text style={type.h2}>Ghi nhớ</Text>
           {plan.scenes.slice(0, 3).map((s) => (
             <View key={s.id} style={styles.fact}>
               <View style={styles.check}><Ionicons name="checkmark" size={12} color={colors.navy} /></View>

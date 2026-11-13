@@ -3,8 +3,8 @@ import { spawn } from 'node:child_process';
 import sharp from 'sharp';
 import { config } from './config.js';
 import {
-  IMAGE_NEGATIVE, IMAGE_STYLE_BASE, PLAN_SCHEMA, PLANNER_SYSTEM,
-  RECOGNIZE_PROMPT, RECOGNIZE_SCHEMA,
+  IMAGE_NEGATIVE, IMAGE_STYLE_BASE, PLAN_SCHEMA, plannerSystem,
+  RECOGNIZE_PROMPT, RECOGNIZE_SCHEMA, VIDEO_STYLE,
 } from './prompts.js';
 import type { Plan, Recognition } from './types.js';
 
@@ -58,6 +58,12 @@ async function withModels<T>(
         last = e;
         if (e instanceof TimeoutError) break;
         const { code, msg } = errInfo(e);
+        if (code === 402) {
+          // Hết credit trả trước của project: model nào cũng lỗi như nhau, không thử lại.
+          cooldownUntil.set(model, Date.now() + 60 * 60_000);
+          last = new QuotaError(`${model}: hết credit (402), cần nạp thêm ở AI Studio`);
+          break;
+        }
         if (code === 429) {
           // Free tier không có quyền (limit: 0) hoặc hết quota ngày → bỏ qua model này 1 giờ.
           if (/limit: 0\b/.test(msg) || /per day/i.test(msg)) {
@@ -67,7 +73,12 @@ async function withModels<T>(
           }
           if (attempt === 2) cooldownUntil.set(model, Date.now() + 60_000); // giới hạn theo phút
         }
-        if (code === 404 || code === 400 || code === 403) break;
+        if (code === 404) {
+          // Model không tồn tại hoặc đã ngừng cho key này (vd. gemini-2.5-flash với key mới) → bỏ qua 24 giờ.
+          cooldownUntil.set(model, Date.now() + 24 * 60 * 60_000);
+          break;
+        }
+        if (code === 400 || code === 403) break;
         const retryable = code === 429 || code === 500 || code === 503 || code === undefined;
         if (!retryable) break;
         await sleep(800 * 2 ** attempt + Math.random() * 400);
@@ -156,7 +167,7 @@ export async function planStory(label: string): Promise<Plan> {
       contents: `Vật thể trẻ vừa chụp: "${label}". Hãy lập kế hoạch câu chuyện.`,
       config: {
         abortSignal,
-        systemInstruction: PLANNER_SYSTEM,
+        systemInstruction: plannerSystem(config.video.enabled ? config.video.maxScenes : 0),
         responseMimeType: 'application/json',
         responseJsonSchema: PLAN_SCHEMA,
         thinkingConfig: thinkingFor(model, 'low') as any,
@@ -184,10 +195,25 @@ function validatePlan(p: Plan): Plan {
     return q;
   };
   p.mystery_question = fixQ(p.mystery_question);
-  p.quiz = p.quiz.slice(0, 3).map((q) => ({ ...fixQ(q), scene_ref: Math.min(Math.max(1, q.scene_ref), p.scenes.length) }));
+  p.quiz = p.quiz.slice(0, 3).map((q) => ({
+    ...fixQ(q),
+    explanation: stripPraise(q.explanation),
+    scene_ref: Math.min(Math.max(1, q.scene_ref), p.scenes.length),
+  }));
   if (p.quiz.length < 3) throw new Error('Plan thiếu quiz');
   if (!p.concept?.name) p.concept = { name: p.title, definition: p.scenes[0].key_fact };
+  // Giữ tối đa N cảnh video (theo thứ tự cảnh); không có motion_prompt thì không làm video.
+  let videos = config.video.enabled ? config.video.maxScenes : 0;
+  p.scenes.forEach((s) => {
+    s.video_worthy = Boolean(s.video_worthy && s.motion_prompt?.trim() && videos-- > 0);
+  });
   return p;
+}
+
+/** Bỏ lời khen/đánh giá ở đầu giải thích quiz: app đã hiện "Chính xác!"/"Chưa đúng" riêng. */
+export function stripPraise(text: string): string {
+  const out = text.replace(/^\s*(chính xác|đúng rồi|đúng vậy|giỏi lắm|tuyệt vời|rất tốt|tiếc quá|chưa đúng|sai rồi)\s*[!.,:]+\s*/iu, '');
+  return out ? out.charAt(0).toUpperCase() + out.slice(1) : text;
 }
 
 /** Sinh ảnh scene → JPEG đã nén. */
@@ -205,6 +231,38 @@ export async function generateImage(scenePrompt: string, characterSheet: string)
       .resize({ width: 1080, withoutEnlargement: true })
       .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
+  });
+}
+
+/**
+ * Image-to-video bằng Gemini Omni Flash (Interactions API): khung đầu là ảnh của cảnh,
+ * độ dài khớp giọng kể. Video có âm thanh gốc nhưng app luôn tắt tiếng, chỉ phát giọng kể TTS.
+ */
+export async function generateVideo(image: Buffer, motionPrompt: string, seconds: number): Promise<Buffer> {
+  const duration = `${Math.min(15, Math.max(3, Math.round(seconds)))}s`;
+  const text = `${motionPrompt.trim()}\n\n${VIDEO_STYLE}`;
+  return withModels(config.video.models, 'video', 6 * 60_000, async (model, signal) => {
+    const r = await ai.interactions.create(
+      {
+        model,
+        input: [
+          { type: 'image', data: image.toString('base64'), mime_type: 'image/jpeg' },
+          { type: 'text', text },
+        ],
+        response_format: { type: 'video', aspect_ratio: '9:16', resolution: config.video.resolution, duration, delivery: 'inline' },
+        store: false,
+      },
+      { fetch_options: { signal } },
+    );
+    const v = r.output_video;
+    if (v?.data) return Buffer.from(v.data, 'base64');
+    if (v?.uri) {
+      // Phòng khi API trả file URI (video lớn): tải bằng key của server.
+      const res = await fetch(v.uri, { headers: { 'x-goog-api-key': config.geminiKey }, signal });
+      if (!res.ok) throw new Error(`Tải video lỗi ${res.status}`);
+      return Buffer.from(await res.arrayBuffer());
+    }
+    throw new Error('Model không trả video');
   });
 }
 
