@@ -5,7 +5,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { cloudEnabled, cloudGet, cloudStart, cloudRetry, schedule, mediaRedirect, downloadVideo } from './cloud.js';
 import { renderRecap } from './recap.js';
 import { config } from './config.js';
-import { modelStatus, QuotaError, recognize } from './gemini.js';
+import { modelStatus, QuotaError, recognize, synthesize } from './gemini.js';
 import { getStory, publicStory, resetImageQuota, retryFailed, startStory } from './pipeline.js';
 
 const app = Fastify({ logger: { level: 'warn' }, bodyLimit: 12 * 1024 * 1024 });
@@ -37,9 +37,11 @@ app.post<{ Params: { id: string }; Body: { photoBase64?: string; answers?: numbe
   try {
     const clip = await downloadVideo(s.assets.scenes[i].video!.url!);
     const score = s.plan.quiz.filter((q, n) => q.answer_index === answers[n]).length;
-    const output = await renderRecap(Buffer.from(photoBase64, 'base64'), clip, s.label, s.plan.scenes[i].key_fact, score, s.plan.quiz.length);
+    const narration = await synthesize(`Ủa alo! ${s.label} mà cũng có bí mật này nè! ${s.plan.scenes[i].key_fact.slice(0, 180)}. Não vừa lên level! Mình trả lời đúng ${score} trên ${s.plan.quiz.length} câu. Đố bạn biết đó!`);
+    const output = await renderRecap(Buffer.from(photoBase64, 'base64'), clip, s.label, s.plan.scenes[i].key_fact, score, s.plan.quiz.length, narration);
     return reply.header('Cache-Control', 'no-store').type('video/mp4').send(output);
-  } catch {
+  } catch (error) {
+    req.log.error({ err: error }, 'recap export failed');
     return reply.code(502).send({ error: 'Chưa ghép được video. Bạn thử lại nhé.' });
   }
 });

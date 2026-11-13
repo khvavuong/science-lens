@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
@@ -36,7 +36,7 @@ export default function Prelude() {
     muted: false,
   });
   const { silence } = voice;
-  useFocusEffect(useCallback(() => () => silence(), [silence]));
+
 
   const s1 = story?.assets.scenes[0];
   const canStart = !!plan;

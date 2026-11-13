@@ -16,12 +16,15 @@ test('renders a shareable portrait MP4 from photo, video and Vietnamese captions
     const generated = spawnSync(binary, ['-y','-loglevel','error','-f','lavfi','-i','color=c=blue:s=360x640:d=1','-c:v','libx264',input]);
     assert.equal(generated.status, 0, generated.stderr.toString());
     const photo = await sharp({ create: { width: 400, height: 300, channels: 3, background: 'yellow' } }).jpeg().toBuffer();
-    const output = await renderRecap(photo, await readFile(input), 'Bút bi', 'Viên bi lăn đưa mực lên giấy.', 2, 3);
+    const voicePath = join(dir, 'voice.wav');
+    assert.equal(spawnSync(binary, ['-y','-loglevel','error','-f','lavfi','-i','sine=frequency=440:duration=11',voicePath]).status, 0);
+    const output = await renderRecap(photo, await readFile(input), 'Bút bi', 'Viên bi lăn đưa mực lên giấy.', 2, 3, { data: await readFile(voicePath), durationMs: 11_000 });
     assert.ok(output.length > 1000 && output.length < 4_000_000);
     const path = join(dir, 'out.mp4'); await writeFile(path, output);
     const decoded = spawnSync(binary, ['-i',path,'-f','null','-']);
     assert.equal(decoded.status, 0);
     assert.match(decoded.stderr.toString(), /720x1280/);
-    assert.match(decoded.stderr.toString(), /Duration: 00:00:07/);
+    assert.match(decoded.stderr.toString(), /Audio: aac/);
+    assert.match(decoded.stderr.toString(), /Duration: 00:00:12/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

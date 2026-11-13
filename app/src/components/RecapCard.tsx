@@ -10,9 +10,9 @@ import { API_URL, mediaUrl } from '@/lib/api';
 import { useJourney } from '@/lib/store';
 import { colors, radius, space, type } from '@/theme';
 
-function Preview({ uri }: { uri: string }) {
+function Preview({ uri, narrated = false }: { uri: string; narrated?: boolean }) {
   const focused = useIsFocused();
-  const player = useVideoPlayer(uri, p => { p.muted = true; p.audioMixingMode = 'mixWithOthers'; });
+  const player = useVideoPlayer(uri, p => { p.muted = !narrated; p.audioMixingMode = 'mixWithOthers'; });
   useEffect(() => { if (!focused) player.pause(); }, [focused, player]);
   return <VideoView player={player} nativeControls contentFit="contain" style={styles.video} />;
 }
@@ -36,8 +36,13 @@ export function RecapCard() {
           method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${process.env.EXPO_PUBLIC_API_TOKEN ?? ''}` },
           body: JSON.stringify({ photoBase64: photo.base64, answers: quizAnswers }), signal: AbortSignal.timeout(120_000),
         });
-        if (!response.ok) throw new Error((await response.json()).error ?? 'Chưa xuất được video.');
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.error ?? `Xuất video bị gián đoạn (${response.status}). Thử lại nhé.`);
+        }
+        if (!response.headers.get('content-type')?.includes('video/mp4')) throw new Error('Máy chủ chưa trả về MP4 hợp lệ.');
         const file = new File(Paths.cache, `lumoslab-${story.id}.mp4`);
+        file.create({ overwrite: true });
         file.write(new Uint8Array(await response.arrayBuffer()));
         uri = file.uri; setExported(uri);
       }
@@ -48,13 +53,13 @@ export function RecapCard() {
   return <View style={styles.card}>
     <Text style={type.h2}>Khoe khám phá của bạn</Text>
     <Text style={type.body}>Ảnh bạn chụp → bí mật của đồ vật → kết quả thử thách.</Text>
-    {exported ? <Preview key={exported} uri={exported} /> : <>
+    {exported ? <Preview key={exported} uri={exported} narrated /> : <>
       {photo && <Image source={{ uri: photo.uri }} contentFit="contain" style={styles.photo} />}
       {video?.url && <Preview key={video.url} uri={mediaUrl(video.url)!} />}
     </>}
     {!video && <Text style={type.body}>{pending ? 'Clip đang được tạo. Bạn không cần thoát ra vào lại.' : 'Chưa có clip cho khám phá này. Bạn vẫn có thể chia sẻ kết quả ở phía trên.'}</Text>}
     {video && photo && <>
-      <Text style={type.body}>Khi xuất, ảnh được gửi để ghép MP4 có chữ, không nhạc; bạn có thể thêm nhạc trong TikTok. Ảnh chỉ dùng tạm, không lưu vào kho cloud.</Text>
+      <Text style={type.body}>Khi xuất, ảnh được gửi để ghép MP4 dọc có chữ, câu đùa khoa học và giọng kể. Bạn có thể thêm nhạc trong TikTok. Ảnh chỉ dùng tạm, không lưu vào kho cloud.</Text>
       <Button label={exported ? 'Chia sẻ MP4' : 'Xuất & chia sẻ MP4'} icon="share-outline" loading={busy} onPress={() => { void share(); }} />
     </>}
     {!pending && videos.some(v => v.status === 'error') && <Button label="Thử tạo clip lại" variant="ghost" onPress={() => { void retryAssets(); }} />}

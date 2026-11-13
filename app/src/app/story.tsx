@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -23,7 +23,7 @@ export default function Story() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
-  const { story, photo, sceneIndex: index, maxViewed, setScene, retryAssets } = useJourney();
+  const { story, photo, sceneIndex: index, maxViewed, setScene } = useJourney();
   const plan = story?.plan;
   const scenes = plan?.scenes ?? [];
   const last = scenes.length - 1;
@@ -50,10 +50,10 @@ export default function Story() {
     autoplay: true,
     muted,
   });
-  const { silence } = voice;
+
 
   // Rời màn hình → dừng tiếng.
-  useFocusEffect(useCallback(() => () => silence(), [silence]));
+
 
   const goTo = useCallback((i: number, animated = true) => {
     if (i < 0 || i > last) return;
@@ -167,15 +167,10 @@ export default function Story() {
               {subtitle.slice(spokenLen)}
             </Text>
 
-            {audioState === 'pending' && (
+            {voice.mode === 'loading' && (
               <View style={styles.note}><ActivityIndicator size="small" color={colors.white} /><Text style={styles.noteText}>Đang chuẩn bị giọng kể…</Text></View>
             )}
-            {audioState === 'error' && (
-              <Pressable onPress={retryAssets} style={styles.note} accessibilityRole="button" accessibilityLabel="Đang dùng giọng đọc của máy. Chạm để thử tạo lại giọng kể">
-                <Ionicons name="phone-portrait-outline" size={16} color={colors.white} />
-                <Text style={styles.noteText}>Giọng của máy · Chạm để thử lại</Text>
-              </Pressable>
-            )}
+
 
             <View style={styles.controls}>
               <IconButton icon="play-skip-back" label="Cảnh trước" dark onPress={() => goTo(index - 1)} />
