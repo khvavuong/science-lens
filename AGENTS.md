@@ -139,3 +139,10 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 - P1 parallax con quay hồi chuyển: chưa làm. Nút tắt haptic: chưa có.
 - Xem truyện offline trên thiết bị: chưa có (cache mới chỉ ở server).
 - Video AI: code xong, chưa gọi API thật lần nào (chờ cấp quyền/billing cho key). Cần test trên máy thật: chuyển ảnh → video, đồng bộ với lời kể, video không cắt giọng kể trên iOS.
+
+## Cập nhật trải nghiệm 13/11/2026
+
+- Giữ nguyên phần voice từ main (9705826): cấu hình ElevenLabs/Gemini và useNarration do team quản lý. Không thay bằng chế độ giọng máy cố định.
+- Video nằm sau quiz. Recap ghép ảnh chụp + clip AI + chữ vui nhộn + điểm quiz thành MP4 dọc có tiếng. Gemini hết credit thì dùng audio có sẵn của cảnh; không thể tạo lời thoại meme mới khi provider trả 402.
+- FFmpeg Linux trên Vercel không có `drawtext`: render chữ PNG bằng sharp/Pango rồi overlay. Phải kiểm tra export trên cloud, không suy từ test Windows.
+- Test crop khung ngắm: `cd app; node --test captureCrop.test.cjs`. Test renderer/API: `cd server; node --import tsx --test src/recap.test.ts src/cloud.test.ts`.

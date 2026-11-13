@@ -10,6 +10,19 @@ const db = cloudEnabled ? createClient(process.env.SUPABASE_URL!, process.env.SU
   global: { fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(15_000) }) },
 }) : undefined;
 const bucket = 'story-media';
+export async function downloadVideo(path: string) {
+  if (!/^\/media\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.mp4$/.test(path)) throw new Error('Invalid video');
+  return downloadAsset(path);
+}
+export async function downloadNarration(path: string) {
+  if (!/^\/media\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(mp3|wav)$/.test(path)) throw new Error('Invalid narration');
+  return downloadAsset(path);
+}
+async function downloadAsset(path: string) {
+  const { data, error } = await db!.storage.from(bucket).download(path.slice('/media/'.length));
+  if (error) throw error;
+  return Buffer.from(await data.arrayBuffer());
+}
 export const slots = (s: Story) => [s.assets.prelude_audio, ...s.assets.scenes.flatMap(x => [x.image, x.audio, ...(x.video ? [x.video] : [])])];
 export const unfinished = (s: Story) => s.status === 'planning' || (s.status === 'ready' && slots(s).some(a => a.status === 'pending'));
 

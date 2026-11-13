@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
@@ -12,7 +12,6 @@ import { useJourney } from '@/lib/store';
 import { useNarration } from '@/lib/useNarration';
 import { colors, font, radius, space, type } from '@/theme';
 
-const MAX_WAIT_MS = 25000; // Sau thời gian này cho vào truyện dù ảnh chưa xong (dùng ảnh gốc).
 
 const fromAsset = (s?: AssetStatus): NodeState => (s === 'ready' ? 'done' : s === 'error' ? 'skipped' : 'loading');
 
@@ -37,18 +36,10 @@ export default function Prelude() {
     muted: false,
   });
   const { silence } = voice;
-  useFocusEffect(useCallback(() => () => silence(), [silence]));
 
-  const [waitedEnough, setWaitedEnough] = useState(false);
-  useEffect(() => {
-    if (!plan) return;
-    const t = setTimeout(() => setWaitedEnough(true), MAX_WAIT_MS);
-    return () => clearTimeout(t);
-  }, [plan]);
 
   const s1 = story?.assets.scenes[0];
-  const scene1Ready = !!s1 && s1.image.status !== 'pending' && s1.audio.status !== 'pending';
-  const canStart = !!plan && (scene1Ready || waitedEnough);
+  const canStart = !!plan;
   const failed = !!storyError || story?.status === 'error' || story?.status === 'unsafe';
 
   const enter = () => {

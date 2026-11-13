@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { RoadmapSheet } from '@/components/RoadmapSheet';
-import { SceneVisual } from '@/components/SceneVisual';
+import { SceneImage } from '@/components/SceneImage';
 import { mediaUrl, type Scene } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
 import { useJourney } from '@/lib/store';
@@ -18,14 +18,12 @@ import { useNarration } from '@/lib/useNarration';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, font, motion, radius, space } from '@/theme';
 
-const AUTO_ADVANCE_MS = 1200;
 
 export default function Story() {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
-  const params = useLocalSearchParams<{ autoplay?: string }>();
-  const { story, photo, sceneIndex: index, maxViewed, setScene, retryAssets } = useJourney();
+  const { story, photo, sceneIndex: index, maxViewed, setScene } = useJourney();
   const plan = story?.plan;
   const scenes = plan?.scenes ?? [];
   const last = scenes.length - 1;
@@ -49,28 +47,19 @@ export default function Story() {
     status: audioState,
     chunks: scene?.subtitle_chunks ?? [],
     key: index,
-    autoplay: params.autoplay === '1',
+    autoplay: true,
     muted,
   });
-  const { silence } = voice;
+
 
   // Rời màn hình → dừng tiếng.
-  useFocusEffect(useCallback(() => () => silence(), [silence]));
+
 
   const goTo = useCallback((i: number, animated = true) => {
     if (i < 0 || i > last) return;
     list.current?.scrollToIndex({ index: i, animated: animated && !reduced });
     setScene(i);
   }, [last, reduced, setScene]);
-
-  // Hết lời kể → tự chuyển cảnh tiếp theo (chỉ khi đang ở chế độ nghe).
-  useEffect(() => {
-    if (!voice.didFinish || !voice.intent) return;
-    if (index >= last) { haptic.success(); return; }
-    const at = index;
-    const t = setTimeout(() => { if (useJourney.getState().sceneIndex === at) goTo(at + 1); }, AUTO_ADVANCE_MS);
-    return () => clearTimeout(t);
-  }, [voice.didFinish, voice.intent, index, last, goTo]);
 
   // Fade overlay chữ mỗi lần đổi cảnh.
   useEffect(() => {
@@ -117,6 +106,7 @@ export default function Story() {
       <FlatList
         ref={list}
         data={scenes}
+        extraData={story?.assets}
         horizontal
         pagingEnabled
         bounces={false}
@@ -135,13 +125,10 @@ export default function Story() {
             delayLongPress={350}
             accessibilityLabel={`Cảnh ${i + 1}: ${item.title}. Chạm để phát hoặc tạm dừng.`}
           >
-            <SceneVisual
-              imageUri={mediaUrl(story!.assets.scenes[i]?.image.url)}
-              videoUri={mediaUrl(story!.assets.scenes[i]?.video?.url)}
+            <SceneImage
+              uri={mediaUrl(story!.assets.scenes[i]?.image.url)}
               fallbackUri={photo?.uri}
               active={i === index}
-              playing={i === index && voice.playing}
-              position={voice.mode === 'remote' ? voice.position : undefined}
               seed={i}
             />
           </Pressable>
@@ -180,15 +167,10 @@ export default function Story() {
               {subtitle.slice(spokenLen)}
             </Text>
 
-            {audioState === 'pending' && (
+            {voice.mode === 'loading' && (
               <View style={styles.note}><ActivityIndicator size="small" color={colors.white} /><Text style={styles.noteText}>Đang chuẩn bị giọng kể…</Text></View>
             )}
-            {audioState === 'error' && (
-              <Pressable onPress={retryAssets} style={styles.note} accessibilityRole="button" accessibilityLabel="Đang dùng giọng đọc của máy. Chạm để thử tạo lại giọng kể">
-                <Ionicons name="phone-portrait-outline" size={16} color={colors.white} />
-                <Text style={styles.noteText}>Giọng của máy · Chạm để thử lại</Text>
-              </Pressable>
-            )}
+
 
             <View style={styles.controls}>
               <IconButton icon="play-skip-back" label="Cảnh trước" dark onPress={() => goTo(index - 1)} />
