@@ -13,6 +13,7 @@ jobs:
       run:
         working-directory: app
     env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
       EXPO_PUBLIC_API_URL: ${{ vars.SCANSCIENCE_API_URL }}
       SCANSCIENCE_SIDELOAD: '1'
     steps:
