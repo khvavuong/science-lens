@@ -5,3 +5,5 @@ server/data/
 dist/
 *.log
 .playwright-mcp/
+.vercel/
+supabase/.temp/
