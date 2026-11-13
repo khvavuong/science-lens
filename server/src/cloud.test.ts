@@ -39,6 +39,7 @@ test('cloud API rejects unauthorized calls and invalid input without calling pro
     assert.equal((await request('/api/stories', { label: 'test' }, 'wrong-key')).status, 401);
     assert.equal((await request('/api/stories', { label: '' }, 'test-only')).status, 400);
     assert.equal((await request('/api/recognize', { imageBase64: 123 }, 'test-only')).status, 400);
+    assert.equal((await request('/api/stories/test/recap', { photoBase64: 'invalid', answers: [0, 0, 0] }, 'test-only')).status, 400);
     assert.equal((await fetch(`http://127.0.0.1:${port}/media/invalid`)).status, 404);
   } finally { child.kill(); }
 });
