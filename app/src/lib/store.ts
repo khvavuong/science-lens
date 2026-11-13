@@ -28,8 +28,10 @@ interface JourneyState {
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let recogToken = 0;
+let pollVersion = 0;
 
 function stopPolling() {
+  pollVersion++;
   if (pollTimer) clearInterval(pollTimer);
   pollTimer = null;
 }
@@ -51,15 +53,19 @@ export const useJourney = create<JourneyState>((set, get) => {
   /** Hỏi trạng thái story mỗi 1.5s cho đến khi mọi ảnh/voice xong. */
   function poll(id: string) {
     stopPolling();
+    const version = pollVersion;
+    let fetching = false;
     pollTimer = setInterval(async () => {
+      if (fetching || version !== pollVersion) return;
+      fetching = true;
       try {
         const s = await api.getStory(id);
-        if (get().story?.id !== id) return stopPolling();
+        if (version !== pollVersion || get().story?.id !== id) return;
         set({ story: s });
         if (assetsSettled(s)) stopPolling();
       } catch {
         /* mạng chập chờn: giữ trạng thái cũ, thử lại lần sau */
-      }
+      } finally { fetching = false; }
     }, 1500);
   }
 

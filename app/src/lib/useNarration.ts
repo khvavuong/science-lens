@@ -1,7 +1,10 @@
+import { useIsFocused } from 'expo-router';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as Speech from 'expo-speech';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AssetStatus } from './api';
+
+let speechOwner: symbol | undefined;
 
 export type NarrationMode = 'remote' | 'device' | 'loading';
 
@@ -12,7 +15,7 @@ export type NarrationMode = 'remote' | 'device' | 'loading';
  * - loading: audio đang được tạo.
  * Luôn ngắt tiếng cũ khi đổi `key` (đổi cảnh) – không bao giờ chồng tiếng.
  */
-export function useNarration({ url, status, chunks, key, autoplay, muted }: {
+export function useNarration({ url, chunks, key, autoplay, muted }: {
   url?: string;
   status?: AssetStatus;
   chunks: string[];
@@ -20,7 +23,13 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
   autoplay: boolean;
   muted: boolean;
 }) {
-  const mode: NarrationMode = url ? 'remote' : status === 'error' ? 'device' : 'loading';
+  const focused = useIsFocused();
+  const [owner] = useState(() => Symbol());
+  // Giữ nguồn âm thanh suốt cảnh, không đọc lại khi TTS từ server về muộn.
+  const [source, setSource] = useState({ key, url });
+  if (source.key !== key) setSource({ key, url });
+  const selectedUrl = source.key === key ? source.url : url;
+  const mode: NarrationMode = selectedUrl ? 'remote' : chunks.length ? 'device' : 'loading';
   const player = useAudioPlayer(null);
   const st = useAudioPlayerStatus(player);
 
@@ -28,6 +37,9 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
   const [intent, setIntent] = useState(autoplay);
   const intentRef = useRef(autoplay);
   const loaded = useRef<string | null>(null);
+  const currentKey = useRef(key);
+  const consent = useRef(autoplay);
+  const focusedRef = useRef(focused);
   const token = useRef(0);
   const mutedRef = useRef(muted);
 
@@ -37,12 +49,14 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
 
   const stopDevice = () => {
     token.current++;
-    Speech.stop().catch(() => {});
+    if (speechOwner === owner) { speechOwner = undefined; Speech.stop().catch(() => {}); }
   };
 
   const speakFrom = (i: number) => {
     const tok = ++token.current;
+    speechOwner = owner;
     const say = (j: number) => {
+      if (!focusedRef.current || tok !== token.current || speechOwner !== owner) return;
       setDev({ key, idx: j, playing: true, done: false });
       Speech.speak(chunks[j], {
         language: 'vi-VN',
@@ -62,19 +76,28 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
 
   // Đổi cảnh hoặc audio vừa sẵn sàng.
   useEffect(() => {
+    focusedRef.current = focused;
     stopDevice();
-    if (mode !== 'remote' || !url) {
+    if (!focused) { try { player.pause(); } catch {} return; }
+    if (currentKey.current !== key) { currentKey.current = key; intentRef.current = consent.current; }
+    if (mode !== 'remote' || !selectedUrl) {
       try { player.pause(); } catch {}
       loaded.current = null;
       if (mode === 'device' && intentRef.current && chunks.length) speakFrom(0);
       return;
     }
-    if (loaded.current === url) return;
+    if (loaded.current === selectedUrl) return;
     try { player.pause(); } catch {}
-    player.replace({ uri: url });
-    loaded.current = url;
-    if (intentRef.current) player.play();
-  }, [mode, url, key]); // eslint-disable-line react-hooks/exhaustive-deps
+    player.replace({ uri: selectedUrl });
+    loaded.current = selectedUrl;
+    if (intentRef.current) {
+      const generation = ++token.current;
+      speechOwner = undefined;
+      void Speech.stop().catch(() => {}).then(() => {
+        if (focusedRef.current && generation === token.current && intentRef.current) player.play();
+      });
+    }
+  }, [mode, selectedUrl, key, focused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* eslint-disable react-hooks/immutability -- AudioPlayer là native object; gán `muted` là API chính thức của expo-audio */
   useEffect(() => {
@@ -84,11 +107,13 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
   /* eslint-enable react-hooks/immutability */
 
   // Rời màn hình / unmount → im lặng.
-  useEffect(() => () => { token.current++; Speech.stop().catch(() => {}); }, []);
+  useEffect(() => () => { token.current++; if (speechOwner === owner) { speechOwner = undefined; Speech.stop().catch(() => {}); } }, [owner]);
 
   const playing = mode === 'remote' ? st.playing : mode === 'device' ? devState.playing : false;
 
   const play = () => {
+    if (!focused) return;
+    consent.current = true;
     intentRef.current = true;
     setIntent(true);
     if (mode === 'remote') {
@@ -109,10 +134,11 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
 
   /** Tạm dừng do rời màn hình: giữ nguyên ý định nghe. Ổn định (chỉ phụ thuộc player) để dùng trong useFocusEffect. */
   const silence = useCallback(() => {
+    focusedRef.current = false;
     try { player.pause(); } catch {}
     token.current++;
-    Speech.stop().catch(() => {});
-  }, [player]);
+    if (speechOwner === owner) { speechOwner = undefined; Speech.stop().catch(() => {}); }
+  }, [player, owner]);
 
   // Tiến độ & đoạn phụ đề hiện tại.
   const { frac, chunkIdx } = (() => {

@@ -2,7 +2,8 @@ import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import { networkInterfaces } from 'node:os';
 import { timingSafeEqual } from 'node:crypto';
-import { cloudEnabled, cloudGet, cloudStart, cloudRetry, schedule, mediaRedirect } from './cloud.js';
+import { cloudEnabled, cloudGet, cloudStart, cloudRetry, schedule, mediaRedirect, downloadVideo } from './cloud.js';
+import { renderRecap } from './recap.js';
 import { config } from './config.js';
 import { modelStatus, QuotaError, recognize } from './gemini.js';
 import { getStory, publicStory, resetImageQuota, retryFailed, startStory } from './pipeline.js';
@@ -23,6 +24,25 @@ else app.get<{ Params: { '*': string } }>('/media/*', async (req, reply) => {
 });
 
 app.get('/api/health', async () => ({ ok: true, models: config.models, video: config.video, cooldown: modelStatus() }));
+
+app.post<{ Params: { id: string }; Body: { photoBase64?: string; answers?: number[] } }>('/api/stories/:id/recap', async (req, reply) => {
+  const { photoBase64, answers } = req.body ?? {};
+  if (typeof photoBase64 !== 'string' || photoBase64.length < 100 || photoBase64.length > 3_500_000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(photoBase64) || !Array.isArray(answers) || answers.length !== 3 || !answers.every(Number.isInteger)) return reply.code(400).send({ error: 'Ảnh hoặc câu trả lời không hợp lệ.' });
+  if (!cloudEnabled) return reply.code(503).send({ error: 'Xuất video cần backend cloud.' });
+  const s = await cloudGet(req.params.id);
+  if (!s?.plan) return reply.code(404).send({ error: 'Không tìm thấy truyện.' });
+  const i = s.assets.scenes.findIndex(x => x.video?.status === 'ready' && x.video.url);
+  if (i < 0) return reply.code(409).send({ error: 'Video đang được chuẩn bị. Bạn thử lại sau nhé.' });
+  if (answers.some((a, n) => a < 0 || a >= s.plan!.quiz[n].options.length)) return reply.code(400).send({ error: 'Câu trả lời không hợp lệ.' });
+  try {
+    const clip = await downloadVideo(s.assets.scenes[i].video!.url!);
+    const score = s.plan.quiz.filter((q, n) => q.answer_index === answers[n]).length;
+    const output = await renderRecap(Buffer.from(photoBase64, 'base64'), clip, s.label, s.plan.scenes[i].key_fact, score, s.plan.quiz.length);
+    return reply.header('Cache-Control', 'no-store').type('video/mp4').send(output);
+  } catch {
+    return reply.code(502).send({ error: 'Chưa ghép được video. Bạn thử lại nhé.' });
+  }
+});
 
 // Ảnh chỉ dùng trong bộ nhớ để nhận diện, KHÔNG lưu xuống đĩa.
 app.post<{ Body: { imageBase64: string; mimeType?: string } }>('/api/recognize', async (req, reply) => {

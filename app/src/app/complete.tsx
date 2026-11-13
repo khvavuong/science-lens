@@ -5,6 +5,7 @@ import { Animated, ScrollView, Share, StyleSheet, Text, View } from 'react-nativ
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { Medal } from '@/components/Illustrations';
+import { RecapCard } from '@/components/RecapCard';
 import { haptic } from '@/lib/haptics';
 import { BADGES, badgeFor, saveJourney } from '@/lib/history';
 import { useJourney } from '@/lib/store';
@@ -90,6 +91,7 @@ export default function Complete() {
             </View>
           ))}
         </View>
+        <RecapCard key={story?.id} />
       </ScrollView>
 
       <View style={[styles.cta, { paddingBottom: insets.bottom + space.sm }]}>
