@@ -100,7 +100,7 @@ export default function Scan() {
           <View style={styles.permIcon}><Ionicons name="camera" size={40} color={colors.brand} /></View>
           <Text style={[type.h1, { textAlign: 'center' }]}>Cho LumosLab mượn camera nhé</Text>
           <Text style={[type.body, { textAlign: 'center', color: colors.muted }]}>
-            Camera giúp bạn chụp một đồ vật để nghe câu chuyện khoa học của nó. Ảnh chỉ dùng để nhận diện đồ vật và không được lưu lại.
+            Camera giúp bạn chụp một đồ vật để nghe câu chuyện khoa học của nó.
           </Text>
         </View>
         <View style={{ gap: space.sm }}>
@@ -170,7 +170,7 @@ export default function Scan() {
             {unsafe && (
               <View style={{ gap: 4 }}>
                 <Text style={type.h2}>Đồ vật này chưa phù hợp</Text>
-                <Text style={[type.body, { color: colors.muted }]}>Bạn thử chụp một đồ vật khác quanh nhà nhé, ví dụ quả táo, cốc nước hay chiếc lá.</Text>
+                <Text style={[type.body, { color: colors.muted }]}>Thử một đồ vật khác nhé, như quả táo hay chiếc lá.</Text>
               </View>
             )}
 
@@ -224,7 +224,7 @@ export default function Scan() {
             )}
 
             {storyFailed && !editing && (
-              <Text style={[type.caption, { color: colors.danger }]}>{storyError ?? 'Chưa tạo được câu chuyện.'} Bấm Bắt đầu khám phá để thử lại.</Text>
+              <Text style={[type.caption, { color: colors.danger }]}>{storyError ?? 'Chưa tạo được câu chuyện.'} Bấm nút bên dưới để thử lại.</Text>
             )}
 
             {editing ? (

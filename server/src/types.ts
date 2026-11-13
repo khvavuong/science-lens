@@ -23,6 +23,10 @@ export interface Scene {
   confidence: 'high' | 'medium' | 'low';
   is_legend: boolean;
   image_prompt: string;
+  /** Cảnh có chuyển động đáng xem → tạo video (tối đa VIDEO_MAX_SCENES cảnh). */
+  video_worthy?: boolean;
+  /** Mô tả chuyển động (tiếng Anh) cho image-to-video. */
+  motion_prompt?: string;
 }
 
 export interface QuizItem extends Choice {
@@ -60,6 +64,7 @@ export interface Story {
   plan?: Plan;
   assets: {
     prelude_audio: Asset;
-    scenes: { image: Asset; audio: Asset }[];
+    /** `video` chỉ có ở cảnh được chọn làm video. */
+    scenes: { image: Asset; audio: Asset; video?: Asset }[];
   };
 }

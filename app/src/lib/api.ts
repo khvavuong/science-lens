@@ -54,7 +54,8 @@ export interface Story {
   status: 'planning' | 'ready' | 'unsafe' | 'error';
   error?: string;
   plan?: Plan;
-  assets: { prelude_audio: Asset; scenes: { image: Asset; audio: Asset }[] };
+  /** `video` chỉ có ở cảnh AI chọn làm video; ảnh luôn là fallback. */
+  assets: { prelude_audio: Asset; scenes: { image: Asset; audio: Asset; video?: Asset }[] };
 }
 
 class ApiError extends Error {}
@@ -87,10 +88,16 @@ export const api = {
   retry: (id: string) => req<Story>(`/api/stories/${id}/retry`, { method: 'POST', body: '{}' }),
 };
 
+/** Bỏ lời khen ở đầu giải thích quiz (truyện cũ trong cache): app đã hiện "Chính xác!"/"Chưa đúng" riêng. */
+export function stripPraise(text: string): string {
+  const out = text.replace(/^\s*(chính xác|đúng rồi|đúng vậy|giỏi lắm|tuyệt vời|rất tốt|tiếc quá|chưa đúng|sai rồi)\s*[!.,:]+\s*/iu, '');
+  return out ? out.charAt(0).toUpperCase() + out.slice(1) : text;
+}
+
 export function assetsSettled(s?: Story | null) {
   if (!s) return false;
   if (s.status === 'error' || s.status === 'unsafe') return true;
   if (s.status !== 'ready') return false;
-  const all = [s.assets.prelude_audio, ...s.assets.scenes.flatMap((x) => [x.image, x.audio])];
+  const all = [s.assets.prelude_audio, ...s.assets.scenes.flatMap((x) => [x.image, x.audio, ...(x.video ? [x.video] : [])])];
   return all.every((a) => a.status !== 'pending');
 }

@@ -10,7 +10,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { RoadmapSheet } from '@/components/RoadmapSheet';
-import { SceneImage } from '@/components/SceneImage';
+import { SceneVisual } from '@/components/SceneVisual';
 import { mediaUrl, type Scene } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
 import { useJourney } from '@/lib/store';
@@ -135,10 +135,13 @@ export default function Story() {
             delayLongPress={350}
             accessibilityLabel={`Cảnh ${i + 1}: ${item.title}. Chạm để phát hoặc tạm dừng.`}
           >
-            <SceneImage
-              uri={mediaUrl(story!.assets.scenes[i]?.image.url)}
+            <SceneVisual
+              imageUri={mediaUrl(story!.assets.scenes[i]?.image.url)}
+              videoUri={mediaUrl(story!.assets.scenes[i]?.video?.url)}
               fallbackUri={photo?.uri}
               active={i === index}
+              playing={i === index && voice.playing}
+              position={voice.mode === 'remote' ? voice.position : undefined}
               seed={i}
             />
           </Pressable>
@@ -162,7 +165,7 @@ export default function Story() {
             <View style={styles.topRow}>
               <IconButton icon="close" label="Thoát câu chuyện" dark onPress={() => router.replace('/')} />
               <View style={styles.when}>
-                <Text style={styles.whenText}>Bước {index + 1} trên {scenes.length}</Text>
+                <Text style={styles.whenText}>{index + 1} / {scenes.length}</Text>
               </View>
               <IconButton icon={muted ? 'volume-mute' : 'volume-high'} label={muted ? 'Bật tiếng' : 'Tắt tiếng'} dark onPress={() => setMuted((m) => !m)} />
             </View>
@@ -183,7 +186,7 @@ export default function Story() {
             {audioState === 'error' && (
               <Pressable onPress={retryAssets} style={styles.note} accessibilityRole="button" accessibilityLabel="Đang dùng giọng đọc của máy. Chạm để thử tạo lại giọng kể">
                 <Ionicons name="phone-portrait-outline" size={16} color={colors.white} />
-                <Text style={styles.noteText}>Đang dùng giọng đọc của máy. Chạm để thử lại</Text>
+                <Text style={styles.noteText}>Giọng của máy · Chạm để thử lại</Text>
               </Pressable>
             )}
 
@@ -207,19 +210,19 @@ export default function Story() {
             </View>
 
             {index >= last ? (
-              <Button label="Làm thử thách kiến thức" icon="trophy" chevron onPress={() => router.push('/quiz')} style={{ marginTop: space.sm }} />
+              <Button label="Làm thử thách" icon="trophy" chevron onPress={() => router.push('/quiz')} style={{ marginTop: space.sm }} />
             ) : null}
 
             <View {...pan.panHandlers}>
               <Pressable onPress={() => setSheet(true)} style={styles.handle} accessibilityRole="button" accessibilityLabel="Mở hành trình khám phá" accessibilityHint="Vuốt lên hoặc chạm để xem các mốc">
                 <View style={styles.grabber} />
-                <Text style={styles.handleText}>Vuốt lên xem hành trình</Text>
+                <Text style={styles.handleText}>Hành trình</Text>
               </Pressable>
             </View>
           </Animated.View>
 
           {!voice.intent && voice.canPlay && !voice.playing && index === 0 && (
-            <View pointerEvents="none" style={styles.tapHint}><Text style={styles.tapHintText}>Chạm ▶ để nghe kể chuyện</Text></View>
+            <View pointerEvents="none" style={styles.tapHint}><Text style={styles.tapHintText}>Chạm ▶ để nghe</Text></View>
           )}
         </>
       )}

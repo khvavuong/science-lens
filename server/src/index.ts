@@ -3,14 +3,14 @@ import fastifyStatic from '@fastify/static';
 import Fastify from 'fastify';
 import { networkInterfaces } from 'node:os';
 import { config } from './config.js';
-import { modelStatus, recognize } from './gemini.js';
+import { modelStatus, QuotaError, recognize } from './gemini.js';
 import { getStory, publicStory, resetImageQuota, retryFailed, startStory } from './pipeline.js';
 
 const app = Fastify({ logger: { level: 'warn' }, bodyLimit: 12 * 1024 * 1024 });
 await app.register(cors, { origin: true });
 await app.register(fastifyStatic, { root: config.mediaDir, prefix: '/media/', maxAge: '7d', immutable: true });
 
-app.get('/api/health', async () => ({ ok: true, models: config.models, cooldown: modelStatus() }));
+app.get('/api/health', async () => ({ ok: true, models: config.models, video: config.video, cooldown: modelStatus() }));
 
 // Ảnh chỉ dùng trong bộ nhớ để nhận diện, KHÔNG lưu xuống đĩa.
 app.post<{ Body: { imageBase64: string; mimeType?: string } }>('/api/recognize', async (req, reply) => {
@@ -23,6 +23,7 @@ app.post<{ Body: { imageBase64: string; mimeType?: string } }>('/api/recognize',
     return r;
   } catch (e: any) {
     req.log.error(e?.message);
+    if (e instanceof QuotaError) return reply.code(503).send({ error: 'Máy chủ AI đang tạm hết lượt. Bạn thử lại sau nhé.' });
     return reply.code(502).send({ error: 'Không nhận diện được. Vui lòng thử lại.' });
   }
 });

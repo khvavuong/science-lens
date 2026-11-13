@@ -32,6 +32,9 @@ LANGUAGE (Vietnamese only)
 - Write numbers and years as digits (năm 1666, 100 độ).
 - subtitle_chunks: split the narration into 2–5 consecutive chunks that join back into the exact narration.
 - Use comparisons from the everyday life of Vietnamese children.
+- Vietnamese capitalization: title, teaser, scene titles and concept.name capitalize only the
+  first letter and proper nouns ("Hành trình đổi màu của quả chuối", not "Hành Trình Đổi Màu Của Quả Chuối").
+- Scene title at most 6 words; teaser one sentence, at most 18 words.
 
 ACCURACY
 - Each scene carries exactly ONE main idea (key_fact) that is scientifically correct.
@@ -54,7 +57,9 @@ CHILD SAFETY
 QUIZ
 - Exactly 3 questions, 3–4 options each, exactly one correct answer, each tied to a told scene (scene_ref).
 - Test understanding, not trivia such as dates.
-- explanation: 1–2 sentences, encouraging (even when the child answered wrong).
+- explanation: 1–2 sentences, encouraging, straight to the reason. Do NOT open with praise or a verdict
+  ("Chính xác", "Đúng rồi", "Tiếc quá"...): the app already shows correct/incorrect. `stripPraise`
+  (server and app) removes such openers as a safety net.
 
 MAIN CONCEPT (concept)
 - name: the story's main science concept, 1–4 words (e.g. "Lực hấp dẫn", "Quang hợp").
@@ -70,11 +75,21 @@ IMAGES (written in English)
 - image_prompt per scene: "[Shot: wide | medium | close-up] of [subject] [action/phenomenon],
   [setting], [scientific detail that must be visible]". One main visual idea matching key_fact.
   Arrows, dotted lines and cutaways are allowed; NO text or numbers in the image.
+
+VIDEO (written in English)
+- video_worthy = true for AT MOST {{VIDEO_MAX}} scenes where motion explains clearly better than a still:
+  an ongoing process (sprouting, melting, evaporating, changing color), physical motion, a reaction.
+  Scenes that only introduce a character or a static setting → false.
+- motion_prompt for every scene: 1–2 sentences describing motion that starts from the image_prompt frame
+  (how the subject moves, camera: static / slow push-in / gentle pan). Slow, smooth, no cuts, no new characters.
 ```
+
+`{{VIDEO_MAX}}` is filled from `VIDEO_MAX_SCENES` (0 when `VIDEO_ENABLED=0`). At generation time
+`VIDEO_STYLE` (no dialogue, no text, same art style) is appended to `motion_prompt`.
 
 ## JSON schema (summary)
 
-User-facing values are Vietnamese; `character_sheet` and `image_prompt` are English.
+User-facing values are Vietnamese; `character_sheet`, `image_prompt` and `motion_prompt` are English.
 
 ```json
 {
@@ -96,7 +111,9 @@ User-facing values are Vietnamese; `character_sheet` and `image_prompt` are Engl
       "key_fact": "...",
       "confidence": "high",
       "is_legend": false,
-      "image_prompt": "Medium shot of ..."
+      "image_prompt": "Medium shot of ...",
+      "video_worthy": false,
+      "motion_prompt": "The apple slowly detaches and falls; static camera."
     }
   ],
   "quiz": [
@@ -106,4 +123,4 @@ User-facing values are Vietnamese; `character_sheet` and `image_prompt` are Engl
 }
 ```
 
-Constraints (enforced by `validatePlan` in [server/src/gemini.ts](../server/src/gemini.ts)): `scenes` has 4–5 items (extra ones are cut, ids renumbered), `quiz` has exactly 3. If any scene is not `confidence = "high"` or lacks a year, `timeline_mode` is forced to `"process"` and labels become `Bước 1…n`.
+Constraints (enforced by `validatePlan` in [server/src/gemini.ts](../server/src/gemini.ts)): `scenes` has 4–5 items (extra ones are cut, ids renumbered), `quiz` has exactly 3. If any scene is not `confidence = "high"` or lacks a year, `timeline_mode` is forced to `"process"` and labels become `Bước 1…n`. Only the first `VIDEO_MAX_SCENES` scenes with `video_worthy = true` and a non-empty `motion_prompt` keep the flag; the app never receives `image_prompt`, `motion_prompt` or `video_worthy`.

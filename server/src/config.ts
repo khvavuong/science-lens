@@ -16,6 +16,13 @@ export const config = {
     tts: (process.env.MODEL_TTS ?? 'gemini-3.8-flash-tts,gemini-3.8-flash-lite-tts,gemini-3.1-flash-tts-preview,gemini-2.5-flash-preview-tts,gemini-2.5-pro-preview-tts').split(','),
   },
   ttsVoice: process.env.TTS_VOICE ?? 'Kore',
+  // Video (Gemini Omni Flash, không có free tier ~ $0.07/giây ở 720p).
+  video: {
+    enabled: process.env.VIDEO_ENABLED !== '0',
+    models: (process.env.MODEL_VIDEO ?? 'gemini-omni-1.2-flash').split(','),
+    maxScenes: Number(process.env.VIDEO_MAX_SCENES ?? 2),
+    resolution: process.env.VIDEO_RESOLUTION ?? '720p',
+  },
   dataDir: join(root, 'data'),
   mediaDir: join(root, 'data', 'media'),
   storiesDir: join(root, 'data', 'stories'),

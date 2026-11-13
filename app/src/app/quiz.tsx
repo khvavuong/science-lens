@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { ChoiceOption, type ChoiceState } from '@/components/ChoiceOption';
 import { HorizontalTrail, type NodeState } from '@/components/Trail';
+import { stripPraise } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
 import { useJourney } from '@/lib/store';
 import { useReducedMotion } from '@/lib/useReducedMotion';
@@ -94,13 +95,13 @@ export default function Quiz() {
             <View style={[styles.fbIcon, !isCorrect && { backgroundColor: colors.surface }]}>
               <Ionicons name={isCorrect ? 'star' : 'bulb'} size={18} color={colors.navy} />
             </View>
-            <Text style={styles.fbTitle}>{isCorrect ? 'Chính xác!' : 'Chưa đúng rồi, không sao nhé!'}</Text>
+            <Text style={styles.fbTitle}>{isCorrect ? 'Chính xác!' : 'Chưa đúng, không sao!'}</Text>
           </View>
           {!isCorrect && (
             <Text style={type.bodyStrong}>Đáp án đúng: {String.fromCharCode(65 + item.answer_index)}. {item.options[item.answer_index]}</Text>
           )}
-          <Text style={type.body}>{item.explanation}</Text>
-          {scene && <Text style={[styles.sceneRef, !isCorrect && { color: colors.brand }]}>Nhắc lại ở Bước {scene.id}: {scene.title}</Text>}
+          <Text style={type.body}>{stripPraise(item.explanation)}</Text>
+          {scene && <Text style={[styles.sceneRef, !isCorrect && { color: colors.brand }]}>Xem lại: {scene.title}</Text>}
           <Button label={q < quiz.length - 1 ? 'Câu tiếp theo' : 'Xem kết quả'} chevron onPress={next} style={{ marginTop: space.sm }} />
         </Animated.View>
       ) : (

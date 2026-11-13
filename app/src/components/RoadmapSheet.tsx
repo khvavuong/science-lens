@@ -61,7 +61,7 @@ export function RoadmapSheet({ visible, onClose, scenes, current, maxViewed, mod
         <View {...pan.panHandlers} style={styles.header}>
           <View style={styles.grabber} />
           <Text style={type.h1}>Hành trình khám phá</Text>
-          <Text style={[type.caption, { fontSize: 14 }]}>Chạm vào bước đã xem để nghe lại.</Text>
+          <Text style={[type.caption, { fontSize: 14 }]}>Chạm bước đã xem để nghe lại.</Text>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: space.sm }}>
           {scenes.map((s, i) => {

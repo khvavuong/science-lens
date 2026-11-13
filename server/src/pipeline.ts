@@ -1,14 +1,15 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { nanoid } from 'nanoid';
 import { config } from './config.js';
-import { generateImage, planStory, QuotaError, synthesize } from './gemini.js';
+import { generateImage, generateVideo, planStory, QuotaError, synthesize } from './gemini.js';
 import type { Asset, Story } from './types.js';
 
 const stories = new Map<string, Story>();
 const byLabel = new Map<string, string>();
 const running = new Set<string>();
 let imagesDisabledUntil = 0;
+let videosDisabledUntil = 0;
 
 const norm = (s: string) => s.normalize('NFC').trim().toLowerCase().replace(/\s+/g, ' ');
 
@@ -30,11 +31,11 @@ export function getStory(id: string) {
   return stories.get(id);
 }
 
-/** Bản gửi cho app: bỏ prompt ảnh nội bộ. */
+/** Bản gửi cho app: bỏ prompt ảnh/video nội bộ. */
 export function publicStory(s: Story) {
   if (!s.plan) return s;
   const { character_sheet, ...plan } = s.plan;
-  return { ...s, plan: { ...plan, scenes: plan.scenes.map(({ image_prompt, ...sc }) => sc) } };
+  return { ...s, plan: { ...plan, scenes: plan.scenes.map(({ image_prompt, motion_prompt, video_worthy, ...sc }) => sc) } };
 }
 
 export function startStory(label: string, opts: { fresh?: boolean } = {}): Story {
@@ -65,7 +66,11 @@ async function run(s: Story) {
       return;
     }
     s.plan = plan;
-    s.assets.scenes = plan.scenes.map(() => ({ image: { status: 'pending' }, audio: { status: 'pending' } }));
+    s.assets.scenes = plan.scenes.map((sc) => ({
+      image: { status: 'pending' },
+      audio: { status: 'pending' },
+      ...(sc.video_worthy ? { video: { status: 'pending' } as Asset } : {}),
+    }));
     s.status = 'ready';
     byLabel.set(s.label, s.id);
     save(s);
@@ -79,7 +84,10 @@ async function run(s: Story) {
   }
 }
 
-/** Ưu tiên: voice mở đầu → ảnh/voice scene 1 → các scene còn lại. */
+/**
+ * Ưu tiên: voice mở đầu → ảnh/voice scene 1 → các scene còn lại.
+ * Video của một scene chạy khi ảnh (khung đầu) và voice (độ dài) của scene đó xong; hàng đợi riêng, không chặn ảnh/audio.
+ */
 async function produceAssets(s: Story) {
   if (running.has(s.id)) return;
   running.add(s.id);
@@ -87,6 +95,8 @@ async function produceAssets(s: Story) {
     const plan = s.plan!;
     const audioJobs: (() => Promise<void>)[] = [];
     const imageJobs: (() => Promise<void>)[] = [];
+    const videoJobs: (() => Promise<void>)[] = [];
+    const done = plan.scenes.map(() => ({ image: deferred(), audio: deferred() }));
 
     if (s.assets.prelude_audio.status !== 'ready') {
       audioJobs.push(() => fill(s, s.assets.prelude_audio, 'prelude', async () => {
@@ -105,17 +115,43 @@ async function produceAssets(s: Story) {
             if (e instanceof QuotaError) imagesDisabledUntil = Date.now() + 10 * 60_000;
             throw e;
           }
-        }));
-      }
+        }).finally(done[i].image.resolve));
+      } else done[i].image.resolve();
       if (slot.audio.status !== 'ready') {
         audioJobs.push(() => fill(s, slot.audio, `s${i + 1}`, async () => {
           const a = await synthesize(scene.narration);
           return { data: a.data, ext: a.ext, durationMs: a.durationMs };
-        }));
+        }).finally(done[i].audio.resolve));
+      } else done[i].audio.resolve();
+
+      const video = slot.video;
+      if (video && video.status !== 'ready' && config.video.enabled && scene.motion_prompt) {
+        video.status = 'pending';
+        videoJobs.push(async () => {
+          await Promise.all([done[i].image.promise, done[i].audio.promise]);
+          if (slot.image.status !== 'ready' || slot.audio.status !== 'ready' || !slot.image.url) {
+            // Thiếu khung đầu hoặc độ dài: bỏ qua, app vẫn dùng ảnh. /retry sẽ thử lại cả chuỗi.
+            video.status = 'error';
+            video.error = 'skipped';
+            save(s);
+            return;
+          }
+          await fill(s, video, `s${i + 1}-video`, async () => {
+            if (Date.now() < videosDisabledUntil) throw new QuotaError('Sinh video tạm tắt (hết quota)');
+            const frame = readFileSync(join(config.mediaDir, basename(slot.image.url!)));
+            const seconds = (slot.audio.durationMs ?? 10_000) / 1000 + 1;
+            try {
+              return { data: await generateVideo(frame, scene.motion_prompt!, seconds), ext: 'mp4' };
+            } catch (e) {
+              if (e instanceof QuotaError) videosDisabledUntil = Date.now() + 10 * 60_000;
+              throw e;
+            }
+          });
+        });
       }
     });
 
-    await Promise.all([pool(audioJobs, 3), pool(imageJobs, 2)]);
+    await Promise.all([pool(audioJobs, 3), pool(imageJobs, 2), pool(videoJobs, 2)]);
   } finally {
     running.delete(s.id);
   }
@@ -139,6 +175,12 @@ async function fill(s: Story, asset: Asset, name: string, make: () => Promise<{ 
   save(s);
 }
 
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => (resolve = r));
+  return { promise, resolve };
+}
+
 async function pool(jobs: (() => Promise<void>)[], n: number) {
   let i = 0;
   await Promise.all(Array.from({ length: Math.min(n, jobs.length) }, async () => {
@@ -149,10 +191,11 @@ async function pool(jobs: (() => Promise<void>)[], n: number) {
 /** Tạo lại các asset lỗi (ví dụ sau khi bật billing cho sinh ảnh). */
 export function retryFailed(s: Story) {
   if (s.status !== 'ready' || !s.plan) return;
-  const failed = [s.assets.prelude_audio, ...s.assets.scenes.flatMap((x) => [x.image, x.audio])].some((a) => a.status !== 'ready');
-  if (failed) void produceAssets(s);
+  const all = [s.assets.prelude_audio, ...s.assets.scenes.flatMap((x) => [x.image, x.audio, ...(x.video ? [x.video] : [])])];
+  if (all.some((a) => a.status !== 'ready')) void produceAssets(s);
 }
 
 export function resetImageQuota() {
   imagesDisabledUntil = 0;
+  videosDisabledUntil = 0;
 }
