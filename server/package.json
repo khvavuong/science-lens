@@ -10,6 +10,8 @@
     "@fastify/cors": "^11.4.1",
     "@fastify/static": "^10.1.10",
     "@google/genai": "^3.2.0",
+    "@supabase/supabase-js": "2.119.0",
+    "@vercel/functions": "3.11.2",
     "fastify": "^5.12.8",
     "nanoid": "^6.0.2",
     "sharp": "^0.35.5"
@@ -17,7 +19,7 @@
   "devDependencies": {
     "@types/node": "^26.6.6",
     "tsx": "^4.23.15",
-    "typescript": "^7.0.2"
+    "typescript": "5.9.3"
   },
   "type": "module",
   "private": true

@@ -67,7 +67,7 @@ async function req<T>(path: string, init?: RequestInit & { timeoutMs?: number })
     const res = await fetch(`${API_URL}${path}`, {
       ...init,
       signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+      headers: { 'content-type': 'application/json', ...(process.env.EXPO_PUBLIC_API_TOKEN ? { authorization: `Bearer ${process.env.EXPO_PUBLIC_API_TOKEN}` } : {}), ...(init?.headers ?? {}) },
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new ApiError(body?.error ?? `Lỗi máy chủ (${res.status})`);

@@ -39,14 +39,16 @@ async function withModels<T>(
   fn: (model: string, signal: AbortSignal) => Promise<T>,
 ): Promise<T> {
   let last: unknown;
+  const deadline = Date.now() + 200_000;
   for (const model of models) {
     if ((cooldownUntil.get(model) ?? 0) > Date.now()) {
       last ??= new QuotaError(`${model}: đang hết quota`);
       continue;
     }
     for (let attempt = 0; attempt < 3; attempt++) {
+      if (Date.now() >= deadline) throw new TimeoutError('Quá thời gian tạo nội dung');
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+      const timer = setTimeout(() => ctrl.abort(), Math.min(timeoutMs, deadline - Date.now()));
       try {
         return await Promise.race([
           fn(model, ctrl.signal),
@@ -319,6 +321,7 @@ function pcmToMp3(pcm: Buffer, rate: number): Promise<Buffer> {
     const p = spawn('ffmpeg', ['-loglevel', 'error', '-f', 's16le', '-ar', String(rate), '-ac', '1', '-i', 'pipe:0', '-b:a', '64k', '-f', 'mp3', 'pipe:1']);
     const chunks: Buffer[] = [];
     p.stdout.on('data', (c) => chunks.push(c));
+    p.stdin.on('error', reject);
     p.on('error', reject);
     p.on('close', (code) => (code === 0 ? resolve(Buffer.concat(chunks)) : reject(new Error('ffmpeg ' + code))));
     p.stdin.end(pcm);
