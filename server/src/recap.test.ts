@@ -19,6 +19,7 @@ test('renders a shareable portrait MP4 from photo, video and Vietnamese captions
     const voicePath = join(dir, 'voice.wav');
     assert.equal(spawnSync(binary, ['-y','-loglevel','error','-f','lavfi','-i','sine=frequency=440:duration=11',voicePath]).status, 0);
     const output = await renderRecap(photo, await readFile(input), 'Bút bi', 'Viên bi lăn đưa mực lên giấy.', 2, 3, { data: await readFile(voicePath), durationMs: 11_000 });
+    if (process.env.RECAP_REVIEW_PATH) await writeFile(process.env.RECAP_REVIEW_PATH, output);
     assert.ok(output.length > 1000 && output.length < 4_000_000);
     const path = join(dir, 'out.mp4'); await writeFile(path, output);
     const decoded = spawnSync(binary, ['-i',path,'-f','null','-']);

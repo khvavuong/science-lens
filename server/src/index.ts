@@ -42,7 +42,7 @@ app.post<{ Params: { id: string }; Body: { photoBase64?: string; answers?: numbe
     const score = s.plan.quiz.filter((q, n) => q.answer_index === answers[n]).length;
     let narration: { data: Buffer; durationMs: number };
     try {
-      narration = await synthesize(`Ủa alo! ${s.label} mà cũng có bí mật này nè! ${s.plan.scenes[i].key_fact.slice(0, 180)}. Não vừa lên level! Mình trả lời đúng ${score} trên ${s.plan.quiz.length} câu. Đố bạn biết đó!`);
+      narration = await synthesize(`Tưởng ${s.label} quá quen rồi hả? Khoan, nhìn kỹ nè! ${s.plan.scenes[i].key_fact.slice(0, 180)}. Nhỏ mà có võ nha! Mình vừa trả lời đúng ${score} trên ${s.plan.quiz.length} câu. Tới lượt bạn, được mấy điểm?`);
     } catch (error) {
       const audio = s.assets.scenes[i].audio;
       if (audio.status !== 'ready' || !audio.url) throw error;

@@ -142,7 +142,7 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 
 ## Cập nhật trải nghiệm 13/11/2026
 
-- Lời kể trong Prelude/Story dùng một voice tiếng Việt cố định của thiết bị, không trộn TTS Gemini theo tình trạng tải. Vuốt/nút chuyển cảnh tự phát lời kể cảnh mới, không tự chuyển cảnh. `useNarration` sở hữu cleanup khi mất focus; không thêm cleanup trùng ở màn hình.
+- Giữ nguyên phần voice từ main (9705826): cấu hình ElevenLabs/Gemini và useNarration do team quản lý. Không thay bằng chế độ giọng máy cố định.
 - Video nằm sau quiz. Recap ghép ảnh chụp + clip AI + chữ vui nhộn + điểm quiz thành MP4 dọc có tiếng. Gemini hết credit thì dùng audio có sẵn của cảnh; không thể tạo lời thoại meme mới khi provider trả 402.
 - FFmpeg Linux trên Vercel không có `drawtext`: render chữ PNG bằng sharp/Pango rồi overlay. Phải kiểm tra export trên cloud, không suy từ test Windows.
-- Test hồi quy lời kể: `cd app; node --test narration.test.cjs`. Test renderer/API: `cd server; node --import tsx --test src/recap.test.ts src/cloud.test.ts`.
+- Test crop khung ngắm: `cd app; node --test captureCrop.test.cjs`. Test renderer/API: `cd server; node --import tsx --test src/recap.test.ts src/cloud.test.ts`.
