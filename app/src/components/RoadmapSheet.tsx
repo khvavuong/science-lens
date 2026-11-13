@@ -106,13 +106,13 @@ export function RoadmapSheet({ visible, onClose, scenes, current, maxViewed, mod
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15,36,82,0.45)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: colors.navyVeil },
   sheet: {
     position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: H * 0.8,
-    backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
   },
   header: { paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: space.md, gap: 4 },
-  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.divider, marginBottom: space.md },
+  grabber: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.trail, marginBottom: space.md },
   item: { flexDirection: 'row', gap: 14 },
   rail: { width: 30, alignItems: 'center', paddingTop: 2 },
   line: { flex: 1, minHeight: 16, marginVertical: 3, borderLeftWidth: 2, borderColor: colors.trail, borderStyle: 'dashed' },

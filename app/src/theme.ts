@@ -1,24 +1,51 @@
-// Design tokens – spec mục 06 (light-first) + đề xuất v2 "Đường ánh sáng" đã duyệt.
+// Bảng màu xanh dương và kem vàng đã duyệt trong DESIGN.md.
 export const colors = {
-  brand: '#1A53CD',
-  brandPressed: '#1544AA',
+  brand: '#1E419D',
+  brandPressed: '#17347F',
+  brandSoft: '#EBF0FC',
   navy: '#0F2452',
   navySoft: '#22396E', // nền lựa chọn trên khối navy
-  bg: '#FFFFFF',
-  bgAlt: '#F6F9FF',
-  surface: '#EAF2FF',
-  lumen: '#FFC93C', // trạng thái "sáng": chỉ làm NỀN, không dùng làm màu chữ trên nền trắng
-  lumenSoft: '#FFF4D1',
+  bg: '#FCF9F2',
+  bgAlt: '#F9F2E5',
+  surface: '#F6EBD7',
+  lumen: '#FFC93C', // Nền và điểm nhấn, không dùng làm màu chữ trên nền sáng.
+  lumenSoft: '#FFF1C9',
+  lumenShade: '#E3A91F',
   mint: '#10B0A0',
   mintSoft: '#E3F6F3',
   mintInk: '#0B7A6F', // chữ xanh mint đủ tương phản
   text: '#23334E',
   muted: '#5B6B85',
-  divider: '#DEE8F6',
-  trail: '#C9D8F2', // vệt chấm của đường ánh sáng
+  divider: '#E7D9C4',
+  trail: '#9E8460', // Viền và đường nối của các mốc tiến độ.
+  onDarkMuted: '#E9DDC8',
   danger: '#C8463D',
   dangerSoft: '#FBEDEC',
   white: '#FFFFFF',
+  black: '#000000',
+  cameraShade: '#00000040',
+  navyVeil: '#0F245273',
+  navyLabel: '#0F24528C',
+  mediaShade: {
+    clear: '#0A142D00',
+    top: '#0A142D8C',
+    hint: '#0A142D99',
+    mid: '#0A142DC7',
+    bottom: '#0A142DE6',
+  },
+  whiteVeil: '#FFFFFF4D',
+  whiteHalf: '#FFFFFF80',
+  whiteSubtle: '#FFFFFF24',
+  whiteBadge: '#FFFFFF1F',
+  pillShadow: '#0F245215',
+};
+
+export const illustrationColors = {
+  apple: '#E5484D',
+  stem: '#7A4A2A',
+  leaf: '#48A16D',
+  ocean: '#4272BF',
+  land: '#70B680',
 };
 
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };

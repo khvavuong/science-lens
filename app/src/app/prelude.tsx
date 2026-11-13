@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   qMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.lumen, alignItems: 'center', justifyContent: 'center' },
   qMarkText: { fontFamily: font.black, fontSize: 20, color: colors.navy },
   mysteryQ: { flex: 1, fontFamily: font.bold, fontSize: 18, lineHeight: 25, color: colors.white },
-  mysteryHint: { fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.trail },
+  mysteryHint: { fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.onDarkMuted },
   stepText: { fontFamily: font.medium, fontSize: 15, lineHeight: 22, color: colors.text },
   stepActive: { fontFamily: font.bold, color: colors.navy },
   cta: { paddingHorizontal: space.lg, paddingTop: space.sm, backgroundColor: colors.bg },

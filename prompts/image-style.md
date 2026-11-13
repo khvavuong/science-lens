@@ -14,9 +14,10 @@ Each scene image = `STYLE_BASE` + `CHARACTER_SHEET` (per story) + `SCENE_PROMPT`
 Children's science picture-book illustration, soft 2.5D digital painting,
 gentle rounded shapes, clean confident linework, friendly and warm mood.
 Bright natural daylight, soft shadows, airy light background with plenty of
-white space. Palette: clean whites and pale blue (#F6F9FF, #EAF2FF), accents of
-brand blue (#1A53CD) and deep navy (#0F2452), small touches of mint (#10B0A0)
-and warm sunlight yellow. Low-to-medium detail, one clear focal subject,
+negative space. Palette: warm cream (#FCF9F2, #F6EBD7) and soft butter yellow
+(#FFF1C9), accents of brand blue (#1E419D), deep navy (#0F2452) and sunlight
+yellow (#FFC93C). Preserve the natural colors of the depicted objects and
+phenomena. Low-to-medium detail, one clear focal subject,
 simple uncluttered background. Scientifically accurate depiction of objects
 and phenomena, shown in a way a 7–12 year old can understand.
 Vertical 9:16 portrait composition. Main subject placed in the central
@@ -65,5 +66,5 @@ cluttered backgrounds, distorted hands or extra limbs.
 | Aspect ratio | 9:16 (requested via `imageConfig.aspectRatio`) |
 | Delivered to the app | JPEG, resized to max 1080 px wide, quality 82 (sharp/mozjpeg) |
 | Prelude teaser | Currently uses the user's own photo (no extra image generation) |
-| Fallback when an image is late or fails | The user's photo with a slow Ken Burns pan; if there is no photo, a very light #F6F9FF → #EAF2FF background with an icon. Never an empty frame |
+| Fallback when an image is late or fails | The user's photo with a slow Ken Burns pan; if there is no photo, a light cream #F9F2E5 → #F6EBD7 background with an icon. Never an empty frame |
 | Free-tier note | Image models have a quota of 0 on the free tier; billing must be enabled for AI images |

@@ -262,9 +262,9 @@ export default function Scan() {
 
 const C = 34;
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#000' },
+  root: { flex: 1, backgroundColor: colors.black },
   top: { position: 'absolute', left: 0, right: 0, zIndex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md },
-  hint: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: 'rgba(15,36,82,0.55)' },
+  hint: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill, backgroundColor: colors.navyLabel },
   hintText: { fontFamily: font.medium, fontSize: 14, color: colors.white },
   frameWrap: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 },
   frame: { width: '68%', aspectRatio: 0.9 },
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 20 },
   bottomWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   card: {
-    backgroundColor: colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.md, gap: space.md,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -284,13 +284,13 @@ const styles = StyleSheet.create({
   editBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, minHeight: 36, borderRadius: radius.pill, backgroundColor: colors.surface },
   editText: { fontFamily: font.semibold, fontSize: 13, color: colors.brand },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: { paddingHorizontal: 14, minHeight: 40, justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.white },
+  chip: { paddingHorizontal: 14, minHeight: 40, justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.bgAlt },
   chipOn: { backgroundColor: colors.brand, borderColor: colors.brand },
   chipText: { fontFamily: font.medium, fontSize: 15, color: colors.text },
   input: { minHeight: 52, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.brand, paddingHorizontal: space.md, fontFamily: font.semibold, fontSize: 17, color: colors.text },
-  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', paddingTop: space.md, backgroundColor: 'rgba(0,0,0,0.25)' },
-  controlsOnCard: { backgroundColor: colors.white, paddingTop: space.xs },
-  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,0.5)' },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', paddingTop: space.md, backgroundColor: colors.cameraShade },
+  controlsOnCard: { backgroundColor: colors.bg, paddingTop: space.xs },
+  shutter: { width: 76, height: 76, borderRadius: 38, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: colors.whiteHalf },
   shutterLight: { width: 64, height: 64, borderRadius: 32, borderColor: colors.divider },
   shutterInner: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.white, borderWidth: 2, borderColor: colors.brand },
   shutterInnerLight: { width: 46, height: 46, borderRadius: 23, borderColor: colors.navy },

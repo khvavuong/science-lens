@@ -2,12 +2,12 @@
 
 LumosLab giúp học sinh 7–12 tuổi khám phá khoa học từ đồ vật quanh mình. App dùng tiếng Việt, giao diện sáng và bố cục dọc. Mỗi màn hình cần giúp học sinh hiểu mình đang ở đâu, cần làm gì tiếp theo và đã khám phá được gì.
 
-Tài liệu này ghi lại nhận diện v2 và cách áp dụng cho toàn app. Dùng [theme.ts](app/src/theme.ts) làm nguồn giá trị màu, chữ, khoảng cách và chuyển động khi triển khai. Các quy tắc luồng và nội dung nằm trong [AGENTS.md](AGENTS.md).
+Tài liệu này ghi lại nhận diện xanh dương và kem vàng đã duyệt cho toàn app. Dùng [theme.ts](app/src/theme.ts) làm nguồn giá trị màu, chữ, khoảng cách và chuyển động khi triển khai. Các quy tắc luồng và nội dung nằm trong [AGENTS.md](AGENTS.md).
 
 ## Nhận diện thương hiệu
 
-- **Tên hiển thị:** LumosLab. Viết thống nhất trên màn khởi động, Trang chủ và những nơi cần ghi tên app.
-- **Dấu hiệu nhận diện:** Ô vuông xanh dương bo góc với chấm vàng ở giữa, đi cùng chữ LumosLab màu navy trên nền sáng. Chừa khoảng trống quanh logo và giữ nguyên tỷ lệ của biểu tượng.
+- **Tên hiển thị:** lumoslab, viết thường và liền nhau.
+- **Logo chữ:** Dùng chữ cách điệu **lumoslab**, nét đậm bo tròn, phần **lumos** màu navy và phần **lab** màu cyan. Dùng [ảnh logo nền trong suốt](app/assets/lumoslab-wordmark.png) trên màn khởi động, onboarding và Trang chủ. Icon ứng dụng và favicon căn cùng logo chữ trên nền kem.
 - **Đường ánh sáng:** Dùng một kiểu mốc tiến độ xuyên suốt màn Mở đầu, Hành trình và Quiz. Mốc xong là nút xanh có dấu tích, mốc hiện tại là nút vàng, mốc chưa tới là vòng rỗng, mốc khóa có ổ khóa. Kèm nhãn hoặc tên truy cập để học sinh nhận ra trạng thái qua cả hình và chữ.
 - **Giọng điệu:** Tò mò, gần gũi và tôn trọng học sinh. Dùng “bạn”, động từ rõ và câu ngắn. Ví dụ, “Chụp một đồ vật” chỉ dẫn một việc cụ thể. Khi trả lời sai, dùng “Chưa đúng” và giải thích bằng một câu dễ hiểu.
 
@@ -15,19 +15,21 @@ Tài liệu này ghi lại nhận diện v2 và cách áp dụng cho toàn app. 
 
 | Vai trò | Token | Màu | Cách dùng |
 | --- | --- | --- | --- |
-| Thương hiệu | `brand` | `#1A53CD` | Nút chính, mốc đã hoàn thành, điều khiển đang hoạt động |
-| Nút chính khi nhấn | `brandPressed` | `#1544AA` | Phản hồi nhấn, chữ trắng |
+| Thương hiệu | `brand` | `#1E419D` | Nút chính, mốc đã hoàn thành, điều khiển đang hoạt động |
+| Nút chính khi nhấn | `brandPressed` | `#17347F` | Phản hồi nhấn, chữ trắng |
+| Xanh nhạt | `brandSoft` | `#EBF0FC` | Nền icon và phản hồi nhấn trên thanh điều hướng Trang chủ |
 | Xanh navy | `navy` | `#0F2452` | Tiêu đề, chữ trên nền vàng, khối câu hỏi bí ẩn |
 | Lựa chọn trên nền tối | `navySoft` | `#22396E` | Nền lựa chọn chưa chọn trong câu hỏi bí ẩn |
-| Nền chính và nền phụ | `bg`, `bgAlt` | `#FFFFFF`, `#F6F9FF` | Nền màn hình và vùng nội dung phụ |
-| Nền thẻ | `surface` | `#EAF2FF` | Ô biểu tượng, thẻ gợi ý hoặc nhóm nội dung |
-| Vàng Lumen | `lumen`, `lumenSoft` | `#FFC93C`, `#FFF4D1` | Nền mốc hiện tại, lựa chọn đang chọn, sao và huy hiệu. Đặt chữ navy trên nền vàng. |
+| Nền kem | `bg`, `bgAlt` | `#FCF9F2`, `#F9F2E5` | Nền màn hình và vùng nội dung phụ |
+| Kem cho thẻ | `surface` | `#F6EBD7` | Thẻ nội dung, lựa chọn, ô biểu tượng |
+| Vàng Lumen và vàng kem | `lumen`, `lumenSoft`, `lumenShade` | `#FFC93C`, `#FFF1C9`, `#E3A91F` | Mốc hiện tại và huy hiệu. Vàng kem làm nền cho minh họa. Đặt chữ navy trên nền vàng. |
 | Thành công | `mint`, `mintSoft`, `mintInk` | `#10B0A0`, `#E3F6F3`, `#0B7A6F` | Điểm nhấn mint, nền phản hồi đúng và chữ mint đậm |
 | Văn bản | `text`, `muted` | `#23334E`, `#5B6B85` | Nội dung chính và chú thích |
-| Viền và đường nối | `divider`, `trail` | `#DEE8F6`, `#C9D8F2` | Viền thẻ, đường phân cách và đường nối mốc |
+| Viền và đường nối | `divider`, `trail` | `#E7D9C4`, `#9E8460` | Viền thẻ dùng màu nhạt. Viền điều khiển và đường nối mốc dùng màu đậm hơn. |
 | Lỗi và đáp án sai | `danger`, `dangerSoft` | `#C8463D`, `#FBEDEC` | Icon hoặc viền đỏ, nền đỏ nhạt. Dùng chữ nội dung đậm trên nền đỏ nhạt. |
+| Chữ trên nền tối | `white`, `onDarkMuted` | `#FFFFFF`, `#E9DDC8` | Chữ trắng trên nút xanh hoặc nội dung chính trên nền tối. Chữ kem cho chú thích trên nền navy. |
 
-Ưu tiên nền sáng, tiêu đề navy và một điểm nhấn chính trong mỗi vùng nội dung. Tránh hiệu ứng phát sáng và gradient dày. Với chữ thường, kiểm tra độ tương phản tối thiểu **4.5:1**. Chữ trắng trên xanh thương hiệu đạt 6.64:1, chữ navy trên vàng Lumen đạt 9.80:1. Chữ phủ ảnh cần lớp nền tối đủ rõ trên cả cảnh sáng lẫn cảnh tối.
+Xanh dương `#1E419D` và kem `#FCF9F2` lấy từ ảnh tham chiếu đã duyệt. Nền kem chiếm phần lớn màn hình, xanh dương dành cho hành động chính, vàng làm điểm nhấn. Xanh mint và đỏ dành cho phản hồi trạng thái. Tránh hiệu ứng phát sáng và gradient dày. Với chữ thường, kiểm tra độ tương phản tối thiểu **4.5:1**. Chữ trắng trên xanh thương hiệu đạt 9.14:1, chữ navy trên vàng Lumen đạt 9.80:1. Chữ phủ ảnh cần lớp nền tối đủ rõ trên cả cảnh sáng lẫn cảnh tối.
 
 ## Font và cỡ chữ
 
@@ -57,7 +59,7 @@ Căn trái phần giải thích và câu hỏi để dễ dò dòng. Có thể c
 
 ## Minh họa
 
-Phong cách tranh sách khoa học thiếu nhi 2.5D. Ưu tiên đồ vật quen thuộc, đường nét bo tròn, bóng mềm, nền sáng thoáng và một chủ thể chính. Dùng hình để chỉ ra hiện tượng khoa học, ví dụ mặt cắt để thấy hạt bên trong quả táo.
+Phong cách tranh sách khoa học thiếu nhi 2.5D. Ưu tiên đồ vật quen thuộc, đường nét bo tròn, bóng mềm, nền kem thoáng và một chủ thể chính. Dùng xanh dương và vàng cho điểm nhấn, giữ màu tự nhiên của đồ vật. Dùng hình để chỉ ra hiện tượng khoa học, ví dụ mặt cắt để thấy hạt bên trong quả táo.
 
 Ảnh cảnh tỷ lệ **9:16**, chủ thể ở khoảng hai phần ba phía trên, 30% bên dưới ít chi tiết để đặt phụ đề. Phụ đề do giao diện hiển thị. Ảnh minh họa cảnh tránh chữ, số và logo. Xem [quy chuẩn minh họa cảnh](prompts/image-style.md).
 
@@ -65,9 +67,9 @@ Phong cách tranh sách khoa học thiếu nhi 2.5D. Ưu tiên đồ vật quen 
 
 | Màn hình | Bố cục và điểm nhấn |
 | --- | --- |
-| Khởi động *(dự kiến)* | Logo và tên LumosLab ở giữa trên nền sáng. Kết thúc khi app sẵn sàng. |
-| Onboarding *(dự kiến)* | Minh họa chính, câu ngắn và một nút ở phía dưới. Số bước và điểm đến sau onboarding sẽ được chốt trong thiết kế luồng riêng. |
-| Trang chủ | Logo ở trên, tiêu đề giới thiệu, minh họa, nút **Quét vật thể ngay**. Đặt Kho khám phá và Thành tích sau hành động chính. |
+| Khởi động | Logo chữ lumoslab ở giữa trên nền kem. Các nét chữ hiện lần lượt từ trái sang phải. Một cầu nối mềm xuất hiện ngắn giữa «lumos» và «lab». Khi bật Giảm chuyển động, logo đứng yên. |
+| Onboarding | Lumo cyan dẫn ba bước làm quen, khám phá và quét thử. Ở màn chào, Lumo nghiêng sang trái, ló nửa thân trên từ mép phải, vẫy nhẹ và chớp mắt một lần. Màn cuối đặt khung quét con quay ở giữa, Lumo ở góc dưới bên phải và lời mời khám phá bên dưới. Vuốt ngang, bấm **Tiếp tục** hoặc **Quay lại** để đổi bước. Thanh tiến độ ba đoạn nằm ngay trên nút chính màu xanh dương. **Bỏ qua** mở Trang chủ và **Quét vật thể đầu tiên** mở màn Quét. App ghi nhớ lựa chọn trên thiết bị. |
+| Trang chủ | Logo ở trên, tiêu đề giới thiệu và minh họa. Thanh pill trắng ở đáy có **Khám phá**, **Bản đồ**, nút camera xanh lớn chỉ có icon, **Thử thách** và **Xếp hạng**. Bản đồ và Thử thách mở màn “Sắp ra mắt”. |
 | Quét vật thể | Ưu tiên ảnh hoặc khung camera. Đặt điều khiển và thẻ kết quả ở phía dưới. Cho chọn ảnh từ thư viện và sửa tên đồ vật khi cần. |
 | Mở đầu (Prelude) | Hiển thị ảnh đồ vật, tiêu đề truyện, câu hỏi bí ẩn trên nền navy và các mốc chuẩn bị. Nút **Vào câu chuyện** mở khi cảnh đầu sẵn sàng hoặc sau mốc chờ 25 giây tính từ khi có nội dung truyện. |
 | Câu chuyện và Hành trình | Cảnh dọc toàn màn hình, phụ đề dễ đọc ở dưới. Có nút đổi cảnh bên cạnh thao tác vuốt. Mở Hành trình qua tay nắm có nhãn, dùng Đường ánh sáng để phân biệt mốc đã xem, đang xem và bị khóa. |

@@ -39,7 +39,7 @@ export function Button({ label, onPress, variant = 'primary', icon, chevron, dis
         style={({ pressed }) => [
           styles.base,
           variant === 'ghost' && styles.ghost,
-          { backgroundColor: pressed && variant === 'primary' ? colors.brandPressed : off && variant === 'primary' ? colors.divider : v.bg, borderColor: v.border },
+          { backgroundColor: pressed && variant === 'primary' ? colors.brandPressed : off && variant === 'primary' ? colors.surface : v.bg, borderColor: v.border },
         ]}
       >
         {loading ? <ActivityIndicator color={off && variant === 'primary' ? colors.muted : v.fg} /> : icon ? <Ionicons name={icon} size={20} color={off && variant === 'primary' ? colors.muted : v.fg} /> : null}
@@ -52,7 +52,7 @@ export function Button({ label, onPress, variant = 'primary', icon, chevron, dis
 
 const variants: Record<Variant, { bg: string; fg: string; border: string }> = {
   primary: { bg: colors.brand, fg: colors.white, border: 'transparent' },
-  secondary: { bg: colors.white, fg: colors.brand, border: colors.divider },
+  secondary: { bg: colors.bgAlt, fg: colors.brand, border: colors.trail },
   ghost: { bg: 'transparent', fg: colors.brand, border: 'transparent' },
 };
 
@@ -84,7 +84,7 @@ export function IconButton({ icon, label, onPress, dark, size = 44, color }: {
       onPress={() => { haptic.tap(); onPress(); }}
       style={({ pressed }) => ({
         width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: dark ? (pressed ? 'rgba(255,255,255,0.3)' : 'rgba(15,36,82,0.45)') : pressed ? colors.surface : colors.bgAlt,
+        backgroundColor: dark ? (pressed ? colors.whiteVeil : colors.navyVeil) : pressed ? colors.surface : colors.bgAlt,
       })}
     >
       <Ionicons name={icon} size={size * 0.46} color={color ?? (dark ? colors.white : colors.navy)} />

@@ -40,7 +40,7 @@ export default function Library() {
 
       {items && items.length === 0 ? (
         <View style={[styles.empty, { paddingBottom: insets.bottom + space.lg }]}>
-          <View style={styles.emptyIcon}><Ionicons name="leaf" size={36} color="#E39B12" /></View>
+          <View style={styles.emptyIcon}><Ionicons name="leaf" size={36} color={colors.brand} /></View>
           <Text style={[type.h2, { textAlign: 'center' }]}>Kho còn trống</Text>
           <Text style={[type.body, { textAlign: 'center', color: colors.muted }]}>Mỗi đồ vật bạn khám phá sẽ được cất vào đây để xem lại bất cứ lúc nào.</Text>
           <Button label="Quét vật thể ngay" icon="camera" onPress={() => router.replace('/scan')} style={{ alignSelf: 'stretch', marginTop: space.md }} />
@@ -65,7 +65,7 @@ export default function Library() {
                 <Text style={styles.title} numberOfLines={2}>{r.title}</Text>
                 <View style={styles.stars}>
                   {Array.from({ length: r.total }, (_, i) => (
-                    <Ionicons key={i} name="star" size={13} color={i < r.score ? '#F2B11E' : colors.divider} />
+                    <Ionicons key={i} name={i < r.score ? 'star' : 'star-outline'} size={13} color={i < r.score ? colors.brand : colors.muted} />
                   ))}
                   <Text style={styles.score}>{r.score}/{r.total}</Text>
                 </View>
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: space.md },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: space.lg, gap: space.sm },
   emptyIcon: { width: 80, height: 80, borderRadius: 26, backgroundColor: colors.lumenSoft, alignItems: 'center', justifyContent: 'center', marginBottom: space.sm },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.divider },
+  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 12, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.surface },
   thumb: { width: 60, height: 60, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   label: { fontFamily: font.semibold, fontSize: 13, color: colors.brand },
   title: { fontFamily: font.bold, fontSize: 16, lineHeight: 21, color: colors.navy },
