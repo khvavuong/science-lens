@@ -12,6 +12,13 @@ const db = cloudEnabled ? createClient(process.env.SUPABASE_URL!, process.env.SU
 const bucket = 'story-media';
 export async function downloadVideo(path: string) {
   if (!/^\/media\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.mp4$/.test(path)) throw new Error('Invalid video');
+  return downloadAsset(path);
+}
+export async function downloadNarration(path: string) {
+  if (!/^\/media\/[a-f0-9-]{36}\/[a-f0-9-]{36}\.(mp3|wav)$/.test(path)) throw new Error('Invalid narration');
+  return downloadAsset(path);
+}
+async function downloadAsset(path: string) {
   const { data, error } = await db!.storage.from(bucket).download(path.slice('/media/'.length));
   if (error) throw error;
   return Buffer.from(await data.arrayBuffer());

@@ -2,7 +2,7 @@ import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import { networkInterfaces } from 'node:os';
 import { timingSafeEqual } from 'node:crypto';
-import { cloudEnabled, cloudGet, cloudStart, cloudRetry, schedule, mediaRedirect, downloadVideo } from './cloud.js';
+import { cloudEnabled, cloudGet, cloudStart, cloudRetry, schedule, mediaRedirect, downloadVideo, downloadNarration } from './cloud.js';
 import { renderRecap } from './recap.js';
 import { config } from './config.js';
 import { modelStatus, QuotaError, recognize, synthesize } from './gemini.js';
@@ -37,11 +37,20 @@ app.post<{ Params: { id: string }; Body: { photoBase64?: string; answers?: numbe
   try {
     const clip = await downloadVideo(s.assets.scenes[i].video!.url!);
     const score = s.plan.quiz.filter((q, n) => q.answer_index === answers[n]).length;
-    const narration = await synthesize(`Ủa alo! ${s.label} mà cũng có bí mật này nè! ${s.plan.scenes[i].key_fact.slice(0, 180)}. Não vừa lên level! Mình trả lời đúng ${score} trên ${s.plan.quiz.length} câu. Đố bạn biết đó!`);
+    let narration: { data: Buffer; durationMs: number };
+    try {
+      narration = await synthesize(`Ủa alo! ${s.label} mà cũng có bí mật này nè! ${s.plan.scenes[i].key_fact.slice(0, 180)}. Não vừa lên level! Mình trả lời đúng ${score} trên ${s.plan.quiz.length} câu. Đố bạn biết đó!`);
+    } catch (error) {
+      const audio = s.assets.scenes[i].audio;
+      if (audio.status !== 'ready' || !audio.url) throw error;
+      narration = { data: await downloadNarration(audio.url), durationMs: audio.durationMs ?? 20_000 };
+      reply.header('X-Recap-Voice', 'cached');
+    }
     const output = await renderRecap(Buffer.from(photoBase64, 'base64'), clip, s.label, s.plan.scenes[i].key_fact, score, s.plan.quiz.length, narration);
     return reply.header('Cache-Control', 'no-store').type('video/mp4').send(output);
   } catch (error) {
     req.log.error({ err: error }, 'recap export failed');
+    if (error instanceof QuotaError) return reply.code(503).send({ error: 'AI đang hết credit tạo giọng video. Cần cập nhật key hoặc nạp credit.' });
     return reply.code(502).send({ error: 'Chưa ghép được video. Bạn thử lại nhé.' });
   }
 });
