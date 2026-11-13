@@ -71,7 +71,12 @@ async function withModels<T>(
           }
           if (attempt === 2) cooldownUntil.set(model, Date.now() + 60_000); // giới hạn theo phút
         }
-        if (code === 404 || code === 400 || code === 403) break;
+        if (code === 404) {
+          // Model không tồn tại hoặc đã ngừng cho key này (vd. gemini-2.5-flash với key mới) → bỏ qua 24 giờ.
+          cooldownUntil.set(model, Date.now() + 24 * 60 * 60_000);
+          break;
+        }
+        if (code === 400 || code === 403) break;
         const retryable = code === 429 || code === 500 || code === 503 || code === undefined;
         if (!retryable) break;
         await sleep(800 * 2 ** attempt + Math.random() * 400);

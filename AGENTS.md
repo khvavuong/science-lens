@@ -71,7 +71,8 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 - **Free tier:** ảnh có quota = 0 (cần billing); mỗi model TTS khoảng 10 request/ngày. `withModels` coi 429 có `limit: 0` hoặc `per day` là hết quota → cooldown model 1 giờ, chuyển ngay model kế tiếp. Đừng xóa danh sách model dự phòng trong `config.ts`.
 - Thứ tự tạo asset: voice mở đầu → ảnh/voice cảnh 1 → các cảnh còn lại (audio song song 3, ảnh song song 2).
 - **Video** (`gemini-omni-1.2-flash`, gọi qua `ai.interactions.create`, không phải `generateVideos`; Veo 3.1 preview đã ngừng 22/10/2026): planner đánh dấu `video_worthy` cho tối đa `VIDEO_MAX_SCENES` cảnh. Video của một cảnh chỉ chạy khi ảnh (làm khung đầu) và voice (làm độ dài, cộng 1 giây, giới hạn 3–15 giây) của cảnh đó xong; hàng đợi riêng (song song 2), không chặn ảnh/audio. Video có âm thanh gốc nhưng app **luôn tắt tiếng** và dùng `audioMixingMode: 'mixWithOthers'` để không cắt giọng kể. **Không có free tier**: mỗi truyện khoảng $1.5 ở 720p. Tắt bằng `VIDEO_ENABLED=0`.
-- Lỗi 402 (hết credit trả trước) được coi như hết quota: cooldown model 1 giờ.
+- Lỗi 402 (hết credit trả trước) được coi như hết quota: cooldown model 1 giờ. Lỗi 404 (model đã ngừng cho key này, vd. `gemini-2.5-flash` với key tạo sau 11/2026) → bỏ qua model 24 giờ.
+- Key free tier: nhận diện, planner, TTS chạy được; **ảnh và video đều `limit: 0`** → cần bật billing. Thiếu ảnh thì video của cảnh đó bị bỏ qua (`error: 'skipped'`).
 - Prompt planner phải giữ: dấu câu đầy đủ (thiếu thì model bỏ hết dấu phẩy/hỏi), năm viết bằng chữ số, 40–60 từ/cảnh.
 - Test thủ công bằng `curl` lên server **tốn quota thật**; lặp lại cùng label để dùng cache.
 
