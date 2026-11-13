@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
+import { DiscoveryShare } from '@/components/DiscoveryShare';
 import { haptic } from '@/lib/haptics';
 import { loadHistory, type JourneyRecord } from '@/lib/history';
 import { useJourney } from '@/lib/store';
@@ -16,6 +17,7 @@ const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export default function Library() {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<JourneyRecord[] | null>(null);
+  const [sharing, setSharing] = useState<JourneyRecord>();
   const openStory = useJourney((s) => s.openStory);
 
   useFocusEffect(useCallback(() => { loadHistory().then(setItems); }, []));
@@ -38,6 +40,7 @@ export default function Library() {
         <View style={{ width: 44 }} />
       </View>
 
+      {sharing && <DiscoveryShare record={sharing} onClose={() => setSharing(undefined)} />}
       {items && items.length === 0 ? (
         <View style={[styles.empty, { paddingBottom: insets.bottom + space.lg }]}>
           <View style={styles.emptyIcon}><Ionicons name="leaf" size={36} color="#E39B12" /></View>
@@ -51,11 +54,12 @@ export default function Library() {
           keyExtractor={(r) => r.storyId}
           contentContainerStyle={{ padding: space.lg, gap: 12, paddingBottom: insets.bottom + space.lg }}
           renderItem={({ item: r }) => (
+            <View style={styles.card}>
             <Pressable
               onPress={() => reopen(r)}
               accessibilityRole="button"
               accessibilityLabel={`${r.title}. ${cap(r.label)}. Đúng ${r.score} trên ${r.total} câu. Chạm để xem lại`}
-              style={({ pressed }) => [styles.card, pressed && { backgroundColor: colors.bgAlt }]}
+              style={({ pressed }) => [{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14 }, pressed && { backgroundColor: colors.bgAlt }]}
             >
               <View style={styles.thumb}>
                 {r.photoUri ? <Image source={{ uri: r.photoUri }} style={StyleSheet.absoluteFill} contentFit="cover" /> : <Ionicons name="book" size={22} color={colors.brand} />}
@@ -72,6 +76,8 @@ export default function Library() {
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.muted} />
             </Pressable>
+            <IconButton icon="share-outline" label={`Chia sẻ ${r.label}`} onPress={() => setSharing(r)} />
+            </View>
           )}
         />
       )}

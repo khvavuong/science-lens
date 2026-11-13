@@ -1,3 +1,4 @@
+import { File, Paths } from 'expo-file-system';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface JourneyRecord {
@@ -7,9 +8,11 @@ export interface JourneyRecord {
   score: number;
   total: number;
   at: number;
-  /** Ảnh người dùng chụp (file cache trên máy, có thể đã bị hệ điều hành dọn). */
+  /** Ảnh lưu trên thiết bị. Bản ghi cũ có thể còn trỏ tới cache. */
   photoUri?: string;
   concept?: string;
+  recapKey?: string;
+  videoUri?: string;
 }
 
 export type BadgeId = 'scientist' | 'explorer' | 'sprout';
@@ -38,9 +41,31 @@ export async function loadHistory(): Promise<JourneyRecord[]> {
   }
 }
 
-export async function saveJourney(r: JourneyRecord) {
-  try {
-    const list = (await loadHistory()).filter((x) => x.storyId !== r.storyId);
-    await AsyncStorage.setItem(KEY, JSON.stringify([r, ...list].slice(0, 20)));
-  } catch { /* không chặn người dùng nếu lưu lỗi */ }
+let writes: Promise<void> = Promise.resolve();
+
+export function saveJourney(r: JourneyRecord) {
+  writes = writes.catch(() => {}).then(async () => {
+    const list = await loadHistory();
+    const previous = list.find(x => x.storyId === r.storyId);
+    let photoUri = r.photoUri;
+    if (photoUri && new File(photoUri).exists && !photoUri.startsWith(Paths.document.uri)) {
+      const saved = new File(Paths.document, `discovery-${r.storyId}.jpg`);
+      await new File(photoUri).copy(saved, { overwrite: true });
+      photoUri = saved.uri;
+    }
+    const videoUri = previous?.recapKey === r.recapKey ? previous?.videoUri : undefined;
+    await AsyncStorage.setItem(KEY, JSON.stringify([{ ...r, photoUri, videoUri }, ...list.filter(x => x.storyId !== r.storyId)].slice(0, 20)));
+  });
+  return writes;
+}
+
+export function saveRecap(storyId: string, recapKey: string, videoUri: string) {
+  writes = writes.catch(() => {}).then(async () => {
+    const list = await loadHistory();
+    const record = list.find(x => x.storyId === storyId && x.recapKey === recapKey);
+    if (!record) return;
+    record.videoUri = videoUri;
+    await AsyncStorage.setItem(KEY, JSON.stringify(list));
+  });
+  return writes;
 }
