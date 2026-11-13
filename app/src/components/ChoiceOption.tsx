@@ -41,7 +41,7 @@ export function ChoiceOption({ index, text, state, onPress, disabled, tone = 'li
       {state === 'wrong' && (
         <View style={styles.tag}>
           <Ionicons name="close" size={18} color={colors.danger} />
-          <Text style={[styles.tagText, { color: colors.danger }]}>Chưa đúng</Text>
+          <Text style={styles.tagText}>Chưa đúng</Text>
         </View>
       )}
     </Pressable>
@@ -51,19 +51,19 @@ export function ChoiceOption({ index, text, state, onPress, disabled, tone = 'li
 type Look = { bg: string; border: string; badgeBg: string; badgeFg: string; fg: string };
 
 const light: Record<ChoiceState, Look> = {
-  idle: { bg: colors.white, border: colors.divider, badgeBg: colors.bgAlt, badgeFg: colors.navy, fg: colors.text },
+  idle: { bg: colors.bg, border: colors.trail, badgeBg: colors.surface, badgeFg: colors.navy, fg: colors.text },
   selected: { bg: colors.surface, border: colors.brand, badgeBg: colors.brand, badgeFg: colors.white, fg: colors.navy },
-  correct: { bg: colors.mintSoft, border: colors.mint, badgeBg: colors.mint, badgeFg: colors.white, fg: colors.navy },
+  correct: { bg: colors.mintSoft, border: colors.mintInk, badgeBg: colors.mintInk, badgeFg: colors.white, fg: colors.navy },
   wrong: { bg: colors.dangerSoft, border: colors.danger, badgeBg: colors.danger, badgeFg: colors.white, fg: colors.navy },
-  dim: { bg: colors.white, border: colors.divider, badgeBg: colors.bgAlt, badgeFg: colors.muted, fg: colors.muted },
+  dim: { bg: colors.bg, border: colors.divider, badgeBg: colors.surface, badgeFg: colors.muted, fg: colors.muted },
 };
 
 const dark: Record<ChoiceState, Look> = {
-  idle: { bg: colors.navySoft, border: 'transparent', badgeBg: 'rgba(255,255,255,0.12)', badgeFg: colors.white, fg: colors.white },
+  idle: { bg: colors.navySoft, border: 'transparent', badgeBg: colors.whiteBadge, badgeFg: colors.white, fg: colors.white },
   selected: { bg: colors.lumen, border: 'transparent', badgeBg: colors.navy, badgeFg: colors.lumen, fg: colors.navy },
   correct: { bg: colors.lumen, border: 'transparent', badgeBg: colors.navy, badgeFg: colors.lumen, fg: colors.navy },
-  wrong: { bg: colors.navySoft, border: 'transparent', badgeBg: 'rgba(255,255,255,0.12)', badgeFg: colors.white, fg: colors.white },
-  dim: { bg: colors.navySoft, border: 'transparent', badgeBg: 'rgba(255,255,255,0.12)', badgeFg: colors.white, fg: colors.white },
+  wrong: { bg: colors.navySoft, border: 'transparent', badgeBg: colors.whiteBadge, badgeFg: colors.white, fg: colors.white },
+  dim: { bg: colors.navySoft, border: 'transparent', badgeBg: colors.whiteBadge, badgeFg: colors.white, fg: colors.white },
 };
 
 const styles = StyleSheet.create({
@@ -76,5 +76,5 @@ const styles = StyleSheet.create({
   letter: { fontFamily: font.black, fontSize: 14 },
   text: { flex: 1, fontFamily: font.semibold, fontSize: 16, lineHeight: 22 },
   tag: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  tagText: { fontFamily: font.bold, fontSize: 13 },
+  tagText: { fontFamily: font.bold, fontSize: 13, color: colors.navy },
 });

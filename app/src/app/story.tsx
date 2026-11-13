@@ -138,8 +138,8 @@ export default function Story() {
       {overlay && (
         <>
           {/* Overlay tối cục bộ: chỉ ở mép trên & dưới để chữ đủ tương phản, không che chủ thể. */}
-          <LinearGradient pointerEvents="none" colors={['rgba(10,20,45,0.55)', 'rgba(10,20,45,0)']} style={[styles.topShade, { height: insets.top + 120 }]} />
-          <LinearGradient pointerEvents="none" colors={['rgba(10,20,45,0)', 'rgba(10,20,45,0.78)', 'rgba(10,20,45,0.9)']} locations={[0, 0.4, 1]} style={[styles.bottomShade, { height: height * 0.5 }]} />
+          <LinearGradient pointerEvents="none" colors={[colors.mediaShade.top, colors.mediaShade.clear]} style={[styles.topShade, { height: insets.top + 120 }]} />
+          <LinearGradient pointerEvents="none" colors={[colors.mediaShade.clear, colors.mediaShade.mid, colors.mediaShade.bottom]} locations={[0, 0.4, 1]} style={[styles.bottomShade, { height: height * 0.5 }]} />
 
           <View style={[styles.top, { paddingTop: insets.top + space.sm }]} pointerEvents="box-none">
             <View style={styles.segments} accessibilityLabel={`Cảnh ${index + 1} trên ${scenes.length}`}>
@@ -228,23 +228,23 @@ const styles = StyleSheet.create({
   bottomShade: { position: 'absolute', bottom: 0, left: 0, right: 0 },
   top: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: space.md, gap: space.sm },
   segments: { flexDirection: 'row', gap: 4 },
-  segment: { flex: 1, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.3)', overflow: 'hidden' },
+  segment: { flex: 1, height: 5, borderRadius: 3, backgroundColor: colors.whiteVeil, overflow: 'hidden' },
   segmentFill: { height: 5, backgroundColor: colors.white },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  when: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: 'rgba(15,36,82,0.5)' },
+  when: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: radius.pill, backgroundColor: colors.navyLabel },
   whenText: { fontFamily: font.bold, fontSize: 14, color: colors.white },
   year: { fontFamily: font.semibold, fontSize: 14, color: colors.lumen },
   bottom: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: space.lg, gap: space.sm },
   title: { fontFamily: font.black, fontSize: 24, lineHeight: 30, color: colors.white, letterSpacing: -0.3 },
-  subtitle: { fontFamily: font.semibold, fontSize: 19, lineHeight: 28, color: 'rgba(255,255,255,0.55)', minHeight: 56 },
+  subtitle: { fontFamily: font.semibold, fontSize: 19, lineHeight: 28, color: colors.onDarkMuted, minHeight: 56 },
   spoken: { color: colors.white },
-  note: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.14)' },
+  note: { flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: colors.whiteSubtle },
   noteText: { fontFamily: font.medium, fontSize: 13, color: colors.white },
   controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.xl, marginTop: space.sm },
   play: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   handle: { alignItems: 'center', paddingTop: space.md, paddingBottom: space.xs, minHeight: 48 },
-  grabber: { width: 40, height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)', marginBottom: 6 },
-  handleText: { fontFamily: font.semibold, fontSize: 13, color: 'rgba(255,255,255,0.85)' },
-  tapHint: { position: 'absolute', alignSelf: 'center', top: '42%', paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill, backgroundColor: 'rgba(10,20,45,0.6)' },
+  grabber: { width: 40, height: 5, borderRadius: 3, backgroundColor: colors.whiteHalf, marginBottom: 6 },
+  handleText: { fontFamily: font.semibold, fontSize: 13, color: colors.onDarkMuted },
+  tapHint: { position: 'absolute', alignSelf: 'center', top: '42%', paddingHorizontal: 16, paddingVertical: 10, borderRadius: radius.pill, backgroundColor: colors.mediaShade.hint },
   tapHintText: { fontFamily: font.semibold, fontSize: 15, color: colors.white },
 });

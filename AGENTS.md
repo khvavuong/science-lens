@@ -102,10 +102,15 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 
 ## Design tokens (`app/src/theme.ts`)
 
-Brand Blue `#1A53CD` (CTA, active, progress) · Deep Navy `#0F2452` (heading, khối câu hỏi bí ẩn) · nền `#FFFFFF`/`#F6F9FF` · Soft Surface `#EAF2FF` · Success Mint `#10B0A0` (dùng tiết chế) · Body `#23334E` · Muted `#5B6B85` · Divider `#DEE8F6`.
-**Lumen Yellow `#FFC93C`** (giao diện v2 đã duyệt): trạng thái "sáng" của đường ánh sáng, đáp án đang chọn trên nền navy, sao/huy hiệu. Chỉ làm NỀN, không làm màu chữ trên nền trắng.
+Bảng màu xanh dương và kem vàng đã duyệt trong [DESIGN.md](DESIGN.md): Brand Blue `#1E419D` (logo, CTA, tiến độ) · Deep Navy `#0F2452` (tiêu đề, khối câu hỏi bí ẩn) · nền kem `#FCF9F2`/`#F9F2E5` · nền thẻ `#F6EBD7` · Success Mint `#10B0A0` (dùng tiết chế) · Body `#23334E` · Muted `#5B6B85` · Divider `#E7D9C4`.
+**Lumen Yellow `#FFC93C`**: trạng thái "sáng" của đường ánh sáng, đáp án đang chọn trên nền navy, sao/huy hiệu. Vàng kem `#FFF1C9` làm nền minh họa. Dùng chữ navy trên nền vàng.
 Font **Be Vietnam Pro** (400–800; tiêu đề dùng 800), lưới 4/8dp, radius card 16–24. Motif xuyên suốt: "Đường ánh sáng" (`components/Trail.tsx`): nút xong = xanh + tích, đang ở = vàng, chưa tới = vòng rỗng, khóa = ổ khóa. Tránh "AI slop": không glow, không gradient dày.
-Thiết kế tham chiếu: canvas Claude Design "LumosLab – Đề xuất giao diện v2" + mockup người dùng đã duyệt.
+Thiết kế tham chiếu: [DESIGN.md](DESIGN.md) và mockup xanh dương, kem vàng đã duyệt. Bố cục dựa trên canvas Claude Design "LumosLab – Đề xuất giao diện v2".
+
+## Tạo và chỉnh sửa hình ảnh
+
+- Khi tạo hoặc chỉnh sửa minh họa 2D của Lumo Pet và phụ kiện đeo, dùng skill [`lumos-asset-style`](.agents/skills/lumos-asset-style/SKILL.md), kể cả khi các asset này xuất hiện trên web. Trước khi tạo ảnh, đối chiếu [ảnh chuẩn Lumo Pet](.agents/skills/lumos-asset-style/references/robot-identity-master.png) và [quy chuẩn tạo hình](.agents/skills/lumos-asset-style/references/style-lock.md). Kiểm tra hình ở kích thước sử dụng thực tế và kiểm tra độ khớp của phụ kiện khi ghép lên Pet.
+- Khi tạo hoặc chỉnh sửa các hình ảnh khác cho web, dùng [DESIGN.md](DESIGN.md) và hình ảnh đã duyệt của cùng màn hình để thống nhất bảng màu, ánh sáng và mức độ chi tiết. Với ảnh cảnh truyện, dùng [quy chuẩn minh họa truyện](prompts/image-style.md).
 
 ## Quy ước code
 
@@ -134,7 +139,7 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 ## Còn thiếu so với spec
 
 - Hình minh họa 3D trong mockup (hero trang chủ, huy hiệu): đang dùng SVG tạm trong `Illustrations.tsx`, chờ file PNG gốc.
-- Ô "Thử thách Quiz" và "Lộ trình học" ở trang chủ: "Sắp ra mắt".
+- Nút "Thử thách" và "Lộ trình" trên thanh điều hướng Trang chủ mở màn "Sắp ra mắt".
 
 - P1 parallax con quay hồi chuyển: chưa làm. Nút tắt haptic: chưa có.
 - Xem truyện offline trên thiết bị: chưa có (cache mới chỉ ở server).

@@ -4,12 +4,14 @@ import {
 import { setAudioModeAsync } from 'expo-audio';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { StartupScreen } from '@/components/StartupScreen';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
+  const [introDone, setIntroDone] = useState(false);
+  const finishIntro = useCallback(() => setIntroDone(true), []);
   const [loaded, error] = useFonts({
     BeVietnamPro_400Regular, BeVietnamPro_500Medium, BeVietnamPro_600SemiBold, BeVietnamPro_700Bold, BeVietnamPro_800ExtraBold,
   });
@@ -19,12 +21,8 @@ export default function RootLayout() {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
   }, []);
 
-  if (!loaded && !error) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-        <ActivityIndicator color={colors.brand} />
-      </View>
-    );
+  if (!introDone || (!loaded && !error)) {
+    return <StartupScreen onIntroEnd={finishIntro} />;
   }
 
   return (
@@ -39,6 +37,7 @@ export default function RootLayout() {
         <Stack.Screen name="complete" options={{ gestureEnabled: false }} />
         <Stack.Screen name="library" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="badges" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="coming-soon" options={{ animation: 'slide_from_right' }} />
       </Stack>
     </SafeAreaProvider>
   );

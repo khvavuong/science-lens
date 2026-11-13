@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
@@ -12,6 +12,7 @@ import { useJourney } from '@/lib/store';
 import { useNarration } from '@/lib/useNarration';
 import { colors, font, radius, space, type } from '@/theme';
 
+const MAX_WAIT_MS = 25000; // Sau thời gian này cho vào truyện dù ảnh chưa xong (dùng ảnh gốc).
 
 const fromAsset = (s?: AssetStatus): NodeState => (s === 'ready' ? 'done' : s === 'error' ? 'skipped' : 'loading');
 
@@ -37,9 +38,18 @@ export default function Prelude() {
   });
   const { silence } = voice;
 
+  const plannedStoryId = plan ? story?.id : undefined;
+  const [waitedStoryId, setWaitedStoryId] = useState<string>();
+  useEffect(() => {
+    if (!plannedStoryId) return;
+    // Polling thay đối tượng plan, nhưng bộ đếm chỉ chạy một lần cho mỗi truyện.
+    const t = setTimeout(() => setWaitedStoryId(plannedStoryId), MAX_WAIT_MS);
+    return () => clearTimeout(t);
+  }, [plannedStoryId]);
 
   const s1 = story?.assets.scenes[0];
-  const canStart = !!plan;
+  const scene1Ready = !!s1 && s1.image.status !== 'pending' && s1.audio.status !== 'pending';
+  const canStart = !!plannedStoryId && (scene1Ready || waitedStoryId === plannedStoryId);
   const failed = !!storyError || story?.status === 'error' || story?.status === 'unsafe';
 
   const enter = () => {
@@ -161,7 +171,7 @@ const styles = StyleSheet.create({
   qMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.lumen, alignItems: 'center', justifyContent: 'center' },
   qMarkText: { fontFamily: font.black, fontSize: 20, color: colors.navy },
   mysteryQ: { flex: 1, fontFamily: font.bold, fontSize: 18, lineHeight: 25, color: colors.white },
-  mysteryHint: { fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.trail },
+  mysteryHint: { fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.onDarkMuted },
   stepText: { fontFamily: font.medium, fontSize: 15, lineHeight: 22, color: colors.text },
   stepActive: { fontFamily: font.bold, color: colors.navy },
   cta: { paddingHorizontal: space.lg, paddingTop: space.sm, backgroundColor: colors.bg },

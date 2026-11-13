@@ -34,7 +34,7 @@ export function TrailNode({ state, size = 26, label }: { state: NodeState; size?
     );
   }
   return (
-    <View style={[styles.node, { width: size, height: size, borderRadius: r, borderWidth: 2, borderColor: colors.divider, backgroundColor: colors.white }]}>
+    <View style={[styles.node, { width: size, height: size, borderRadius: r, borderWidth: 2, borderColor: colors.trail, backgroundColor: colors.bg }]}>
       {state === 'skipped' ? <Ionicons name="remove" size={size * 0.5} color={colors.muted} /> : label ? <Text style={[styles.num, { fontSize: size * 0.42, color: colors.muted }]}>{label}</Text> : null}
     </View>
   );
