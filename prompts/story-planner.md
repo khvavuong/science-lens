@@ -124,3 +124,5 @@ User-facing values are Vietnamese; `character_sheet`, `image_prompt` and `motion
 ```
 
 Constraints (enforced by `validatePlan` in [server/src/gemini.ts](../server/src/gemini.ts)): `scenes` has 4–5 items (extra ones are cut, ids renumbered), `quiz` has exactly 3. If any scene is not `confidence = "high"` or lacks a year, `timeline_mode` is forced to `"process"` and labels become `Bước 1…n`. Only the first `VIDEO_MAX_SCENES` scenes with `video_worthy = true` and a non-empty `motion_prompt` keep the flag; the app never receives `image_prompt`, `motion_prompt` or `video_worthy`.
+
+Video sau quiz: ưu tiên bộ phận có thật/cơ chế của vật thể; chọn một cảnh phù hợp khi bật video, không bịa cấu tạo hoặc dùng cảnh nhân vật lịch sử làm clip chia sẻ.

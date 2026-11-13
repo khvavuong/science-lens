@@ -74,6 +74,7 @@ HÌNH ẢNH (viết bằng tiếng Anh)
 
 VIDEO (viết bằng tiếng Anh)
 - video_worthy = true cho TỐI ĐA {{VIDEO_MAX}} cảnh mà chuyển động giúp hiểu bài rõ hơn hẳn ảnh tĩnh: một quá trình đang diễn ra (nảy mầm, tan chảy, bay hơi, đổi màu), chuyển động vật lý (rơi, lăn, quay, dòng chảy), phản ứng. Cảnh chỉ giới thiệu nhân vật hoặc khung cảnh tĩnh → false.
+- Clip được dùng sau quiz để chia sẻ khám phá: ưu tiên cảnh giải thích các bộ phận có thật và cách chúng phối hợp trong vật thể, hoặc một cơ chế khoa học nhìn thấy được. Khi video được bật, chọn ít nhất một cảnh phù hợp nếu có thể minh họa chính xác; không chọn cảnh lịch sử/nhân vật làm clip chia sẻ, không bịa cấu tạo.
 - motion_prompt mỗi cảnh (kể cả cảnh false): 1–2 câu mô tả chuyển động bắt đầu từ chính khung hình của image_prompt: chủ thể chuyển động thế nào, máy quay (static, slow push-in, gentle pan). Chuyển động chậm, êm, dễ theo dõi; không cắt cảnh; không thêm nhân vật mới.`;
 
 /** Planner nhận số cảnh video tối đa từ config. */
