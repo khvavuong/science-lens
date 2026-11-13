@@ -4,11 +4,11 @@ Used for the LLM call that runs after the object has been recognized. Output mus
 
 > **The source of truth is [server/src/prompts.ts](../server/src/prompts.ts) (`PLANNER_SYSTEM`, `PLAN_SCHEMA`).** This file documents it. When you change the prompt, change the code first, then update this file.
 >
-> The live prompt in code is written in **Vietnamese**, and every user-facing field (title, narration, subtitles, quiz) must be generated in Vietnamese. The text below is an English translation for reference.
+> The live prompt in code is written in **English**. Every child-facing field (title, narration, subtitles, quiz) must still be generated in Vietnamese. Visual prompts (`character_sheet`, `image_prompt`, `motion_prompt`) are in English. The text below summarizes the live prompt.
 
 ---
 
-## System prompt (English translation)
+## System prompt (English summary)
 
 ```
 You are a science storyteller for Vietnamese children aged 7–12 in the LumosLab app.
@@ -70,8 +70,8 @@ MYSTERY QUESTION (Prelude screen)
   and must not be given away in the teaser.
 
 IMAGES (written in English)
-- character_sheet: a short, fixed description of recurring characters/objects so all scenes stay consistent.
-  Historical figures are stylized and friendly, in period-accurate clothing.
+- character_sheet: a short, fixed description of recurring objects so all scenes stay consistent.
+  Do not depict any person from the child's photo or request human figures.
 - image_prompt per scene: "[Shot: wide | medium | close-up] of [subject] [action/phenomenon],
   [setting], [scientific detail that must be visible]". One main visual idea matching key_fact.
   Arrows, dotted lines and cutaways are allowed; NO text or numbers in the image.

@@ -23,7 +23,10 @@ else app.get<{ Params: { '*': string } }>('/media/*', async (req, reply) => {
   return url ? reply.redirect(url) : reply.code(404).send({ error: 'Không tìm thấy' });
 });
 
-app.get('/api/health', async () => ({ ok: true, models: config.models, video: config.video, cooldown: modelStatus() }));
+app.get('/api/health', async () => ({
+  ok: true, models: config.models, video: config.video, cooldown: modelStatus(),
+  tts: config.elevenlabs.key ? { provider: 'elevenlabs', voiceId: config.elevenlabs.voiceId, models: config.elevenlabs.models } : { provider: 'gemini' },
+}));
 
 app.post<{ Params: { id: string }; Body: { photoBase64?: string; answers?: number[] } }>('/api/stories/:id/recap', async (req, reply) => {
   const { photoBase64, answers } = req.body ?? {};

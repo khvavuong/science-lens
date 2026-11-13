@@ -25,7 +25,7 @@ server/     Node 22 + Fastify 5 + @google/genai, chạy bằng tsx (không build
   src/index.ts      HTTP API
   data/             story JSON + media sinh ra (gitignored, xóa được)
 prompts/    tài liệu giải thích prompt (đồng bộ tay với server/src/prompts.ts)
-.env        GEMINI_KEY=... (gitignored; mẫu ở .env.example)
+.env        GEMINI_KEY=..., ELEVEN_LAB_KEY=... (gitignored; mẫu ở .env.example)
 ```
 
 ## Lệnh
@@ -67,6 +67,7 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 - **Bắt buộc `apiVersion: 'v1beta'`**: SDK `@google/genai` 3.x mặc định v1, mà v1 không nhận JSON mode/`responseJsonSchema` và `speechConfig`.
 - **Thinking:** model 3.x dùng `thinkingLevel`, model 2.5 dùng `thinkingBudget` (xem `thinkingFor`). Planner dùng `low`: `medium` mất ~50s thay vì ~10s.
 - **Độ trễ dao động mạnh**: cùng model lúc 10s, lúc >45s. Nhận diện và planner dùng `hedged()` (stagger 6s/12s); mọi lệnh gọi phải có timeout. `gemini-3.5-flash` hay treo khi nhận ảnh nên vision dùng `gemini-2.5-flash` trước.
+- **Giọng kể:** có `ELEVEN_LAB_KEY` → chỉ dùng ElevenLabs (giọng `ELEVENLABS_VOICE_ID`, mặc định "Saigon Lily"; model `eleven_v4` rồi `eleven_turbo_v2_5`, xuất PCM 24kHz → mp3). Lỗi thì asset `error` → app đọc bằng expo-speech, **không** quay về Gemini TTS. Không có key → Gemini TTS như dưới.
 - **TTS đọc nguyên văn MỌI chữ**: không bao giờ chèn câu chỉ dẫn giọng vào `contents` (đã từng bị đọc thành tiếng). Model TTS không nhận `systemInstruction`. Cách kiểm chứng audio: cho `gemini-2.5-flash` chép lại file.
 - **Free tier:** ảnh có quota = 0 (cần billing); mỗi model TTS khoảng 10 request/ngày. `withModels` coi 429 có `limit: 0` hoặc `per day` là hết quota → cooldown model 1 giờ, chuyển ngay model kế tiếp. Đừng xóa danh sách model dự phòng trong `config.ts`.
 - Thứ tự tạo asset: voice mở đầu → ảnh/voice cảnh 1 → các cảnh còn lại (audio song song 3, ảnh song song 2).
