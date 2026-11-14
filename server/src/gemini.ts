@@ -153,6 +153,9 @@ function thinkingFor(model: string, level: 'low' | 'medium') {
     : { thinkingLevel: level === 'low' ? ThinkingLevel.LOW : ThinkingLevel.MEDIUM };
 }
 
+/** Tên đồ vật một dòng: model đôi khi trả về chữ in trên vật kèm xuống dòng ("C\nh\nhồi ức…"). */
+export const cleanLabel = (s: string) => (s ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 60);
+
 export async function recognize(imageBase64: string, mimeType = 'image/jpeg'): Promise<Recognition> {
   return hedged(config.models.vision, 'recognize', 6_000, 25_000, async (model, abortSignal) => {
     const r = await ai.models.generateContent({
@@ -161,8 +164,10 @@ export async function recognize(imageBase64: string, mimeType = 'image/jpeg'): P
       config: { abortSignal, responseMimeType: 'application/json', responseJsonSchema: RECOGNIZE_SCHEMA, thinkingConfig: thinkingFor(model, 'low') as any },
     });
     const out = parseJson<Recognition>(r.text);
-    out.label = out.label.trim().toLowerCase();
-    out.alternatives = (out.alternatives ?? []).filter((a) => a && a.toLowerCase() !== out.label).slice(0, 3);
+    out.label = cleanLabel(out.label);
+    // Bỏ gợi ý rỗng/trùng (không phân biệt hoa thường, khoảng trắng) với nhãn chính và với nhau.
+    out.alternatives = (out.alternatives ?? []).map(cleanLabel)
+      .filter((a, i, list) => a && a !== out.label && list.indexOf(a) === i).slice(0, 3);
     return out;
   });
 }

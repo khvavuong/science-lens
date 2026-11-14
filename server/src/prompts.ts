@@ -2,10 +2,10 @@
 
 export const RECOGNIZE_PROMPT = `You identify objects for a science learning app for Vietnamese children aged 7–12.
 Look at the image and identify ONE main object near its center. Return the result in the required JSON schema.
-- label: the object's short, common name in Vietnamese, in lowercase (for example, "quả táo", "cốc nước", "bóng đèn"). Do not translate this field into English.
+- label: the object's short, common name in Vietnamese, in lowercase (for example, "quả táo", "cốc nước", "bóng đèn"). Do not translate this field into English. It is one line of 1–4 words naming what KIND of thing the object is. Never use text, brand names, slogans, or logos printed on the object, and never spell out letters. Example: a plastic cup printed with words is "ly nhựa" or "ly trà sữa", not the printed words.
 - label_en: the corresponding English name.
 - confidence: your confidence from 0 to 1.
-- alternatives: at most 3 other plausible object names in Vietnamese if the image is ambiguous.
+- alternatives: at most 3 other plausible object names in Vietnamese if the image is ambiguous, following the same rules as label (kinds of objects, never printed text).
 - has_person: true if any person appears in the image. Do not identify, describe, or infer anything about people; focus only on the object.
 - safe: false if the main object is unsuitable for a children's science story, such as adult content, violence, real weapons, or illegal drugs. Common objects that may be dangerous, such as knives, scissors, medicine, or electrical outlets, still have safe = true; the later story will explain safety.
 - If the image is blurry or has no clear object, give your best tentative object name and set confidence below 0.4.`;

@@ -17,6 +17,9 @@ import { useJourney } from '@/lib/store';
 import { colors, font, radius, space, type } from '@/theme';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+// Gom mọi khoảng trắng (kể cả xuống dòng mà AI đôi khi trả về) thành một dấu cách.
+const cleanLabel = (s: string) => s.normalize('NFC').replace(/s+/g, ' ').trim();
+const CARD_RADIUS = 28;
 
 /**
  * Quét + Nhận diện trong một màn:
@@ -29,6 +32,7 @@ export default function Scan() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [busy, setBusy] = useState(false);
   const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const [cardHeight, setCardHeight] = useState(0);
   const cam = useRef<CameraView>(null);
   const { photo, recognition, recognizeError, label, story, storyError, setPhoto, reset, runRecognition, startStory } = useJourney();
   const [editing, setEditing] = useState(false);
@@ -84,7 +88,7 @@ export default function Scan() {
   const startEditing = (initial: string) => { setDraft(initial); setEditing(true); };
 
   const submitDraft = () => {
-    const v = draft.trim();
+    const v = cleanLabel(draft);
     if (!v || !photo) return;
     haptic.select();
     setEditing(false);
@@ -134,12 +138,25 @@ export default function Scan() {
   const recognizing = !!photo && !recognition && !recognizeError;
   const unsure = !!recognition?.safe && recognition.confidence < 0.6 && !named;
   const storyFailed = !!storyError || story?.status === 'error';
+  const shownLabel = cap(cleanLabel(label));
+  // Gợi ý: làm sạch, bỏ trùng không phân biệt hoa thường (tránh "C h" và "C H" thành hai chip).
+  const choices = unsure && recognition
+    ? [recognition.label, ...recognition.alternatives].map(cleanLabel)
+      .filter((x, i, a) => x && a.findIndex((y) => y.toLowerCase() === x.toLowerCase()) === i)
+    : [];
+  const isChosen = (alt: string) => alt.toLowerCase() === cleanLabel(label).toLowerCase();
 
   return (
     <View style={styles.root} onLayout={e => setViewport(e.nativeEvent.layout)}>
       {isFocused && <StatusBar style="light" />}
       {photo ? (
-        <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFill} contentFit="contain" accessibilityLabel="Ảnh trong khung bạn vừa chụp" />
+        // Ảnh nằm trong vùng phía trên thẻ kết quả (lấn nhẹ dưới góc bo), không bị thẻ che mất nửa dưới.
+        <Image
+          source={{ uri: photo.uri }}
+          style={[styles.photo, { bottom: Math.max(0, cardHeight - CARD_RADIUS) }]}
+          contentFit="contain"
+          accessibilityLabel="Ảnh trong khung bạn vừa chụp"
+        />
       ) : (
         isFocused && <CameraView ref={cam} style={StyleSheet.absoluteFill} facing={facing} animateShutter />
       )}
@@ -172,7 +189,11 @@ export default function Scan() {
         </View>
       </View>}
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.bottomWrap}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.bottomWrap}
+        onLayout={(e) => setCardHeight(e.nativeEvent.layout.height)}
+      >
         {photo ? (
           <View style={[styles.card, { paddingBottom: insets.bottom + space.md }]}>
             {editing ? (
@@ -226,23 +247,29 @@ export default function Scan() {
                   <Image source={{ uri: photo.uri }} style={styles.thumb} contentFit="cover" />
                   <View style={{ flex: 1 }}>
                     <Text style={type.caption}>{named ? 'Bạn đặt tên là' : unsure ? 'Mình đoán đây là' : 'Mình nhận ra đây là'}</Text>
-                    <Text style={styles.label} accessibilityRole="header" numberOfLines={2} maxFontSizeMultiplier={1.3}>{cap(label)}</Text>
+                    <Text style={styles.label} accessibilityRole="header" numberOfLines={2} maxFontSizeMultiplier={1.3}>{shownLabel}</Text>
                   </View>
-                  <IconButton icon="pencil" label="Sửa tên đồ vật" onPress={() => startEditing(label)} />
+                  <IconButton icon="pencil" label="Sửa tên đồ vật" onPress={() => startEditing(cleanLabel(label))} />
                 </View>
-                {unsure && recognition && recognition.alternatives.length > 0 && (
+                {choices.length > 1 && (
                   <View style={styles.chips}>
-                    {[recognition.label, ...recognition.alternatives].filter((x, i, a) => a.indexOf(x) === i).map((alt) => (
+                    {choices.map((alt) => (
                       <Pressable
-                        key={alt}
-                        onPress={() => { haptic.select(); useJourney.setState({ label: alt }); void startStory(alt); }}
+                        key={alt.toLowerCase()}
+                        onPress={() => { haptic.select(); useJourney.setState({ label: alt.toLowerCase() }); void startStory(alt); }}
                         accessibilityRole="button"
                         accessibilityLabel={cap(alt)}
-                        accessibilityState={{ selected: alt === label }}
+                        accessibilityState={{ selected: isChosen(alt) }}
                         hitSlop={4}
-                        style={[styles.chip, alt === label && styles.chipOn]}
+                        style={[styles.chip, isChosen(alt) && styles.chipOn]}
                       >
-                        <Text style={[styles.chipText, alt === label && { color: colors.white }]}>{cap(alt)}</Text>
+                        <Text
+                          style={[styles.chipText, isChosen(alt) && { color: colors.white }]}
+                          numberOfLines={1}
+                          maxFontSizeMultiplier={1.3}
+                        >
+                          {cap(alt)}
+                        </Text>
                       </Pressable>
                     ))}
                   </View>
@@ -301,8 +328,9 @@ const styles = StyleSheet.create({
   bl: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 20 },
   br: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 20 },
   bottomWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  photo: { position: 'absolute', top: 0, left: 0, right: 0 },
   card: {
-    backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    backgroundColor: colors.bg, borderTopLeftRadius: CARD_RADIUS, borderTopRightRadius: CARD_RADIUS,
     paddingHorizontal: space.lg, paddingTop: space.lg, gap: space.md,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -310,7 +338,7 @@ const styles = StyleSheet.create({
   thumb: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.surface },
   label: { fontFamily: font.black, fontSize: 28, lineHeight: 34, color: colors.navy, letterSpacing: -0.4 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: { paddingHorizontal: 14, minHeight: 44, justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.bgAlt },
+  chip: { maxWidth: '100%', paddingHorizontal: 14, minHeight: 44, justifyContent: 'center', borderRadius: radius.pill, borderWidth: 1, borderColor: colors.divider, backgroundColor: colors.bgAlt },
   chipOn: { backgroundColor: colors.brand, borderColor: colors.brand },
   chipText: { fontFamily: font.medium, fontSize: 16, color: colors.text },
   input: { minHeight: 56, borderRadius: radius.md, borderWidth: 1.5, borderColor: colors.brand, paddingHorizontal: space.md, fontFamily: font.semibold, fontSize: 17, color: colors.text },
