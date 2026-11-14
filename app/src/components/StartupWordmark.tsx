@@ -92,7 +92,7 @@ export function StartupWordmark({ onIntroEnd }: { onIntroEnd: () => void }) {
   const rightTip = rightEdge - (rightEdge - center) * (1 - release) ** 2;
 
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel="lumoslab"
+    <View accessible accessibilityRole="image" accessibilityLabel="lumoslens"
       style={{ width: '100%', maxWidth: logoWidth, aspectRatio: wordmarkAspectRatio }}>
       <Svg width="100%" height="100%" viewBox="0 0 1024 207" aria-hidden>
         <Defs>

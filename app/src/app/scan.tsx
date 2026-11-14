@@ -102,7 +102,7 @@ export default function Scan() {
         <IconButton icon="chevron-back" label="Quay lại" onPress={() => router.back()} />
         <View style={styles.permBody}>
           <View style={styles.permIcon}><Ionicons name="camera" size={40} color={colors.brand} /></View>
-          <Text style={[type.h1, { textAlign: 'center' }]}>Cho LumosLab mượn camera nhé</Text>
+          <Text style={[type.h1, { textAlign: 'center' }]}>Cho LumosLens mượn camera nhé</Text>
           <Text style={[type.body, { textAlign: 'center', color: colors.muted }]}>
             Camera giúp bạn chụp một đồ vật để nghe câu chuyện khoa học của nó.
           </Text>

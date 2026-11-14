@@ -1,5 +1,5 @@
 {
-  "name": "lumoslab-server",
+  "name": "lumoslens-server",
   "version": "1.0.0",
   "scripts": {
     "dev": "node --env-file=../.env --watch --import tsx src/index.ts",

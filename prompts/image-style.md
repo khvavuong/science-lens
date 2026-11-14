@@ -1,4 +1,4 @@
-# LumosLab – Image Style Prompt (v1, approved)
+# LumosLens – Image Style Prompt (v1, approved)
 
 Image prompts are written in **English** because image models follow English better. Narration, subtitles and quiz stay in Vietnamese.
 

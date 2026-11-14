@@ -10,7 +10,7 @@ export function Wordmark({ width }: { width: number }) {
       contentFit="contain"
       accessible
       accessibilityRole="image"
-      accessibilityLabel="lumoslab"
+      accessibilityLabel="lumoslens"
       style={{ width: '100%', maxWidth: width, aspectRatio: wordmarkAspectRatio }}
     />
   );

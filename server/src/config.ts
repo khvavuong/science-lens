@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 
-const root = process.env.VERCEL ? join(tmpdir(), 'lumoslab') : join(dirname(fileURLToPath(import.meta.url)), '..');
+const root = process.env.VERCEL ? join(tmpdir(), 'lumoslens') : join(dirname(fileURLToPath(import.meta.url)), '..');
 
 export const config = {
   port: Number(process.env.PORT ?? 8787),

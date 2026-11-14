@@ -1,4 +1,4 @@
-# AGENTS.md — LumosLab
+# AGENTS.md — LumosLens
 
 Hướng dẫn cho AI coding agent (và dev mới) làm việc trong repo này.
 Nguồn yêu cầu sản phẩm: `LumosLab_UIUX_Design_Specification.docx` (gọi tắt "spec"). Khi code và spec mâu thuẫn, spec thắng, trừ các quyết định đã chốt ở mục "Quyết định đã chốt".

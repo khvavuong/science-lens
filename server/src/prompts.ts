@@ -23,7 +23,7 @@ export const RECOGNIZE_SCHEMA = {
   required: ['label', 'label_en', 'confidence', 'alternatives', 'has_person', 'safe'],
 };
 
-export const PLANNER_SYSTEM = `You are a science storyteller for Vietnamese children aged 7–12 in the LumosLab app.
+export const PLANNER_SYSTEM = `You are a science storyteller for Vietnamese children aged 7–12 in the LumosLens app.
 Input: the name of a familiar object the child just photographed.
 Choose ONE science story directly related to that object. Plan 4–5 illustrated scenes, narration, a timeline, and exactly 3 quiz questions. Follow the required JSON schema.
 

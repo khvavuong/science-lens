@@ -10,7 +10,7 @@ export function StartupScreen({ onIntroEnd }: { onIntroEnd?: () => void }) {
       <ActivityIndicator
         color={colors.brand}
         accessibilityRole="progressbar"
-        accessibilityLabel="Đang mở lumoslab"
+        accessibilityLabel="Đang mở lumoslens"
       />
     </View>
   );

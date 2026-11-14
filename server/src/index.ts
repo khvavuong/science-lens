@@ -104,4 +104,4 @@ app.post<{ Params: { id: string } }>('/api/stories/:id/retry', async (req, reply
 
 void app.listen({ port: config.port, host: '0.0.0.0' }).catch((error) => { app.log.error(error); process.exitCode = 1; });
 const ips = Object.values(networkInterfaces()).flat().filter((n) => n && n.family === 'IPv4' && !n.internal).map((n) => n!.address);
-console.log(`LumosLab API: http://localhost:${config.port}  (LAN: ${ips.map((ip) => `http://${ip}:${config.port}`).join(', ')})`);
+console.log(`LumosLens API: http://localhost:${config.port}  (LAN: ${ips.map((ip) => `http://${ip}:${config.port}`).join(', ')})`);
