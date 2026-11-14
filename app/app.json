@@ -40,7 +40,7 @@
         "expo-camera",
         {
           "cameraPermission": "lumoslens cần camera để bạn chụp một đồ vật và khám phá câu chuyện khoa học phía sau nó.",
-          "microphonePermission": false,
+          "microphonePermission": "lumoslens cần micro khi em chọn ghi âm lời giải thích cho thử thách.",
           "recordAudioAndroid": false
         }
       ],
@@ -49,7 +49,7 @@
         {
           "photosPermission": "lumoslens cần truy cập ảnh để bạn chọn một đồ vật muốn khám phá.",
           "cameraPermission": false,
-          "microphonePermission": false
+          "microphonePermission": "lumoslens cần micro khi em chọn ghi âm lời giải thích cho thử thách."
         }
       ],
       [

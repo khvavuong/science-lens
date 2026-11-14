@@ -42,6 +42,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$RUNNER_TEMP/LumosLens.xcarchive/Products/Applications/"*.app "$RUNNER_TEMP/ipa/Payload/"
           test -f "$RUNNER_TEMP/ipa/Payload/"*.app/Info.plist
+          plist=$(find "$RUNNER_TEMP/ipa/Payload" -maxdepth 2 -name Info.plist -print -quit)
+          test -n "$(/usr/libexec/PlistBuddy -c 'Print :NSMicrophoneUsageDescription' "$plist")"
           cd "$RUNNER_TEMP/ipa"
           ditto -c -k --sequesterRsrc --keepParent Payload ScanScience-unsigned.ipa
           unzip -t ScanScience-unsigned.ipa
