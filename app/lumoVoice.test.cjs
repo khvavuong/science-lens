@@ -8,8 +8,8 @@ const ts = require('typescript');
 const out = { exports: {} };
 runInNewContext(ts.transpileModule(readFileSync(join(__dirname, 'src/lib/lumoVoiceUtil.ts'), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
-}).outputText, { exports: out.exports, module: out, Math });
-const { textHash, audioExt, lumoFileName, safetyTimeoutMs, simulatedLevel, LEVEL_TICK_MS } = out.exports;
+}).outputText, { exports: out.exports, module: out, Math, setTimeout, clearTimeout });
+const { textHash, audioExt, lumoFileName, safetyTimeoutMs, simulatedLevel, within, LEVEL_TICK_MS } = out.exports;
 
 test('hash tất định, 16 ký tự hex, khác nhau theo câu', () => {
   const a = textHash('Chào bạn, mình là Lumo!');
@@ -46,4 +46,30 @@ test('mức giả lập nằm trong 0.35..0.7 và dao động', () => {
   for (const v of vals) assert.ok(v >= 0.35 && v <= 0.7 + 1e-9);
   assert.equal(simulatedLevel(0), 0.35);
   assert.ok(Math.max(...vals) - Math.min(...vals) > 0.2);
+});
+
+const delay = (ms, v, fail) => new Promise((res, rej) => setTimeout(() => (fail ? rej(new Error(v)) : res(v)), ms));
+
+test('within: trả giá trị khi xong trước hạn', async () => {
+  assert.equal(await within(delay(5, 'uri'), 200), 'uri');
+});
+
+test('within: quá hạn trả undefined, promise gốc vẫn chạy tiếp', async () => {
+  let finished = false;
+  const slow = delay(80, 'uri').then((v) => { finished = true; return v; });
+  const t0 = Date.now();
+  assert.equal(await within(slow, 20), undefined);
+  assert.ok(Date.now() - t0 < 70);
+  assert.equal(await slow, 'uri');
+  assert.ok(finished);
+});
+
+test('within: lỗi trước hạn thì reject theo', async () => {
+  await assert.rejects(within(delay(5, '503', true), 200), /503/);
+});
+
+test('within: dọn hẹn giờ (không giữ tiến trình sống)', async () => {
+  const t0 = Date.now();
+  await within(Promise.resolve(1), 60_000);
+  assert.ok(Date.now() - t0 < 1000);
 });

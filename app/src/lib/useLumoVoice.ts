@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import { huntApi } from './api';
 import { rmsLevel } from './huntLive';
-import { LEVEL_TICK_MS, lumoFileName, safetyTimeoutMs, simulatedLevel } from './lumoVoiceUtil';
+import { LEVEL_TICK_MS, lumoFileName, safetyTimeoutMs, simulatedLevel, within } from './lumoVoiceUtil';
 
 /** Mẫu sóng âm cũ hơn ngưỡng này coi như đã im. */
 const SAMPLE_FRESH_MS = 300;
@@ -13,12 +13,24 @@ const SAMPLE_FRESH_MS = 300;
 const SIM_AFTER_MS = 500;
 /** Gọi play() mà quá lâu chưa có tiếng → coi như player lỗi, đọc bằng giọng máy. */
 const START_WATCHDOG_MS = 4000;
+/** Chờ audio server tối đa chừng này rồi đọc bằng giọng máy; tải vẫn chạy nền để lần sau có sẵn. */
+const FETCH_CAP_MS = 6000;
 
 // Cache câu thoại → uri, sống suốt phiên app (dùng chung giữa các màn).
 const uriCache = new Map<string, string>();
+// Lượt tải đang chạy (kể cả đã quá hạn chờ) → không gọi server hai lần cho cùng câu.
+const inflight = new Map<string, Promise<string>>();
+// Câu đã phát lỗi một lần; lỗi lần nữa mới xóa tệp (quota TTS rất ít).
+const failedOnce = new Set<string>();
 
-function within<T>(p: Promise<T>, ms: number): Promise<T | undefined> {
-  return Promise.race([p, new Promise<undefined>((r) => setTimeout(r, ms))]);
+/** Lấy uri, dùng chung lượt tải đang chạy. Promise trả về không bao giờ gây unhandled rejection. */
+function fetchUri(text: string): Promise<string> {
+  const running = inflight.get(text);
+  if (running) return running;
+  const p = loadUri(text).finally(() => inflight.delete(text));
+  p.catch(() => {});
+  inflight.set(text, p);
+  return p;
 }
 
 /** Lấy uri phát được cho câu thoại: cache bộ nhớ → tệp cache có sẵn → gọi server rồi ghi tệp. */
@@ -55,14 +67,24 @@ async function loadUri(text: string): Promise<string> {
   return uri;
 }
 
-/** Bỏ cache của câu thoại phát lỗi (tệp hỏng) để lần sau tải lại. */
-function forget(text: string) {
+/**
+ * Câu thoại phát lỗi. Lần đầu: chỉ bỏ mục trong bộ nhớ (native đọc lại tệp; web giữ data uri vì lỗi
+ * thường do trình duyệt chặn tự phát). Phát lại vẫn lỗi: xóa cả tệp để lần sau tải lại từ server.
+ */
+function playbackFailed(text: string) {
+  const web = Platform.OS === 'web';
+  if (!failedOnce.has(text)) {
+    failedOnce.add(text);
+    if (!web) uriCache.delete(text);
+    return;
+  }
+  failedOnce.delete(text);
   const uri = uriCache.get(text);
   uriCache.delete(text);
-  if (!uri || Platform.OS === 'web') return;
+  if (web) return;
   try {
-    const f = new File(uri);
-    if (f.exists) f.delete();
+    const files = uri ? [new File(uri)] : [lumoFileName(text, 'audio/mpeg'), lumoFileName(text, 'audio/wav')].map((n) => new File(Paths.cache, n));
+    for (const f of files) if (f.exists) f.delete();
   } catch {}
 }
 
@@ -171,8 +193,10 @@ export function useLumoVoice() {
 
   const run = async (id: number, text: string) => {
     try {
-      const uri = await loadUri(text);
+      // Server chậm/treo → không để im lặng lâu: quá FETCH_CAP_MS thì đọc giọng máy ngay.
+      const uri = await within(fetchUri(text), FETCH_CAP_MS);
       if (!live(id)) return;
+      if (uri === undefined) throw new Error('Tải audio quá lâu');
       // Màn hình đã tắt micro; chỉ chuyển phiên audio sang chế độ phát.
       // Lỗi đặt audio mode không chặn việc thử phát (watchdog lo phần còn lại).
       await within(setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true }).catch(() => {}), 1500);
@@ -187,7 +211,7 @@ export function useLumoVoice() {
       player.play();
       arm(line, START_WATCHDOG_MS, () => {
         if (live(id) && !line.soundAt) {
-          forget(text);
+          playbackFailed(text);
           deviceSpeak(id, text);
         }
       });
@@ -203,12 +227,14 @@ export function useLumoVoice() {
       const line = lineRef.current;
       if (!line || line.phase !== 'file') return;
       if (st.error && !line.soundAt) {
-        forget(line.text);
+        playbackFailed(line.text);
         deviceSpeak(line.id, line.text);
         return;
       }
-      if (!line.soundAt && (st.playing || st.currentTime > 0)) {
+      // Chỉ dựa vào `playing`: currentTime ngay sau replace() có thể còn là của nguồn trước.
+      if (!line.soundAt && st.playing) {
         line.soundAt = Date.now();
+        failedOnce.delete(line.text);
         const id = line.id;
         arm(line, safetyTimeoutMs(line.text), () => endLine(id, true));
       }

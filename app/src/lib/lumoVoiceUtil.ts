@@ -33,6 +33,16 @@ export function safetyTimeoutMs(text: string): number {
   return Math.max(8000, 120 * text.length);
 }
 
+/**
+ * Chờ `p` tối đa `ms`: resolve giá trị của `p`, hoặc `undefined` nếu quá hạn; `p` reject thì reject theo.
+ * `p` vẫn chạy tiếp sau khi quá hạn (không hủy). Luôn dọn hẹn giờ.
+ */
+export function within<T>(p: Promise<T>, ms: number): Promise<T | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const cap = new Promise<undefined>((r) => { timer = setTimeout(r, ms); });
+  return Promise.race([p, cap]).finally(() => clearTimeout(timer));
+}
+
 /** Mức giả lập khi đọc bằng giọng máy (không có mẫu sóng âm): 0.35 + 0.35 × |sin(t × 9)|, t tính bằng giây. */
 export function simulatedLevel(tSec: number): number {
   return 0.35 + 0.35 * Math.abs(Math.sin(tSec * 9));
