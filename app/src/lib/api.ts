@@ -97,6 +97,7 @@ export type HuntResult = { itemId: string; revision: number; verdict: HuntVerdic
 export const huntApi = {
   evaluate: (body: FormData) => req<HuntResult>('/api/hunt/evaluate', { method: 'POST', body, timeoutMs: 45_000 }),
   transcribe: (body: FormData) => req<{ transcript: string }>('/api/hunt/transcribe', { method: 'POST', body, timeoutMs: 50_000 }),
+  speak: (text: string) => req<{ audio: string; mime: string }>('/api/hunt/speak', { method: 'POST', body: JSON.stringify({ text }), timeoutMs: 20_000 }),
 };
 
 export const api = {

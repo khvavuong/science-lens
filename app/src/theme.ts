@@ -33,6 +33,7 @@ export const colors = {
     mid: '#0A142DC7',
     bottom: '#0A142DE6',
   },
+  cameraBand: '#0A142DD1', // dải đáy navy 82% trên camera (Thử thách trực tiếp)
   whiteVeil: '#FFFFFF4D',
   whiteHalf: '#FFFFFF80',
   whiteSubtle: '#FFFFFF24',

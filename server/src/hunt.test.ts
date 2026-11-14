@@ -83,3 +83,41 @@ test('validates hunt uploads and returns feedback for the current item revision'
     assert.equal(audioCalls, 3);
   } finally { await app.close(); }
 });
+
+test('speaks short lines once per text', async () => {
+  const app = Fastify();
+  let calls = 0;
+  let fail = false;
+  await app.register(registerHunt, {
+    ai: {
+      evaluate: async () => { throw new Error('unused'); },
+      transcribe: async () => { throw new Error('unused'); },
+      speak: async () => {
+        calls++;
+        if (fail) throw new Error('tts down');
+        return { data: Buffer.from('mp3'), ext: 'mp3' as const, durationMs: 1000 };
+      },
+    },
+  });
+  const post = (payload: unknown) => app.inject({ method: 'POST', url: '/api/hunt/speak', payload: payload as object });
+  try {
+    const first = await post({ text: 'Xin chào' });
+    assert.equal(first.statusCode, 200);
+    assert.deepEqual(first.json(), { audio: Buffer.from('mp3').toString('base64'), mime: 'audio/mpeg' });
+    assert.equal(first.headers['cache-control'], 'no-store');
+    assert.equal((await post({ text: 'Xin chào' })).statusCode, 200);
+    assert.equal(calls, 1);
+    assert.equal((await post({ text: 'a'.repeat(301) })).statusCode, 400);
+    assert.equal((await post({ text: '   ' })).statusCode, 400);
+    assert.equal((await post({})).statusCode, 400);
+    fail = true;
+    assert.equal((await post({ text: 'Câu mới' })).statusCode, 503);
+  } finally { await app.close(); }
+});
+
+test('topics in app and server match and every ask has {object}', () => {
+  const read = (path: string) => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
+  const server = read('./hunt-topics.json');
+  assert.deepEqual(server, read('../../app/src/lib/hunt-topics.json'));
+  for (const topic of server) assert.match(topic.ask, /\{object\}/);
+});

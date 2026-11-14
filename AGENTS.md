@@ -16,6 +16,7 @@ app/        Expo SDK 58 + expo-router (React Native 0.88, React 19.3, TypeScript
   src/app/          route = màn hình: index, scan (quét + nhận diện), prelude, story, quiz, complete, library, badges, _layout
   src/components/   Button/IconButton, ChoiceOption, SceneVisual (ảnh + video), SceneImage, RoadmapSheet, Trail (đường ánh sáng), Illustrations (SVG tạm thay hình 3D)
   src/lib/          api.ts (types + client), store.ts (zustand, polling), useNarration.ts, history.ts, haptics.ts
+  src/app/hunt/[topicId].tsx  Thử thách trực tiếp: camera toàn màn, pha ready → scanning → asking → listening → transcribing → review (đếm 2 giây) → evaluating → feedback; điều phối trong lib/useHuntLive.ts (hook useScanLoop, useLumoVoice, useAutoListen; logic thuần ở lib/huntScreen.ts), giao diện ở components/HuntLive*.tsx, LumoAura, VoiceBars, ScanReticle
   src/theme.ts      design tokens — KHÔNG hard-code màu/spacing ở nơi khác
   AGENTS.md         quy tắc riêng của Expo (đọc trước khi đụng API Expo/RN)
 server/     Node 22 + Fastify 5 + @google/genai, chạy bằng tsx (không build)
@@ -61,6 +62,7 @@ App tìm backend theo IP của máy chạy `expo start` (`Constants.expoConfig.h
 | GET | `/api/health` | model đang dùng + model đang cooldown |
 | POST | `/api/hunt/transcribe` | Multipart với tệp ghi âm tối đa 30 giây, trả bản chép lời tiếng Việt |
 | POST | `/api/hunt/evaluate` | Multipart với ảnh, chủ đề và lời giải thích, trả nhận xét cho từng vật |
+| POST | `/api/hunt/speak` | `{text}` (≤ 300 ký tự) → `{audio, mime}` (base64) giọng Lumo qua `synthesize()`; cache trong bộ nhớ theo câu, 20 lần/phút |
 
 Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` và `app/src/lib/api.ts`. Đổi schema → sửa cả hai + `PLAN_SCHEMA` trong `prompts.ts` + `prompts/story-planner.md`.
 
@@ -109,6 +111,7 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 Bảng màu xanh dương và kem vàng đã duyệt trong [DESIGN.md](DESIGN.md): Brand Blue `#1E419D` (logo, CTA, tiến độ) · Deep Navy `#0F2452` (tiêu đề, khối câu hỏi bí ẩn) · nền kem `#FCF9F2`/`#F9F2E5` · nền thẻ `#F6EBD7` · Success Mint `#10B0A0` (dùng tiết chế) · Body `#23334E` · Muted `#5B6B85` · Divider `#E7D9C4`.
 **Lumen Yellow `#FFC93C`**: trạng thái "sáng" của đường ánh sáng, đáp án đang chọn trên nền navy, sao/huy hiệu. Vàng kem `#FFF1C9` làm nền minh họa. Dùng chữ navy trên nền vàng.
 Font **Be Vietnam Pro** (400–800; tiêu đề dùng 800), lưới 4/8dp, radius card 16–24. Motif xuyên suốt: "Đường ánh sáng" (`components/Trail.tsx`): nút xong = xanh + tích, đang ở = vàng, chưa tới = vòng rỗng, khóa = ổ khóa. Tránh "AI slop": không glow, không gradient dày.
+**Ngoại lệ do người dùng yêu cầu:** aura của Lumo (`components/LumoAura.tsx`) ở đáy màn Thử thách trực tiếp được phép phát sáng (vàng Lumen giữa, xanh brand hai bên), chỉ hiện khi Lumo đang nói. Không dùng lại ở màn khác.
 Thiết kế tham chiếu: [DESIGN.md](DESIGN.md) và mockup xanh dương, kem vàng đã duyệt. Bố cục dựa trên canvas Claude Design "LumosLab – Đề xuất giao diện v2".
 
 ## Tạo và chỉnh sửa hình ảnh

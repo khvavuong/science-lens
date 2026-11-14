@@ -17,8 +17,9 @@ import { useJourney } from '@/lib/store';
 import { colors, font, radius, space, type } from '@/theme';
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-// Gom mọi khoảng trắng (kể cả xuống dòng mà AI đôi khi trả về) thành một dấu cách.
-const cleanLabel = (s: string) => s.normalize('NFC').replace(/s+/g, ' ').trim();
+// Dựng sẵn dấu (NFC), bỏ ký tự vô hình bàn phím hay chèn, gom mọi khoảng trắng (kể cả xuống dòng
+// mà AI đôi khi trả về) thành một dấu cách. Lưu ý: phải là `\s+`; `/s+/` sẽ xóa chữ "s" ("sữa" → " ữa").
+const cleanLabel = (s: string) => s.normalize('NFC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/\s+/g, ' ').trim();
 const CARD_RADIUS = 28;
 
 /**

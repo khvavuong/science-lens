@@ -4,7 +4,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { readFileSync } from 'node:fs';
 import sharp from 'sharp';
 import { decodeHuntAudio } from './huntAudio.js';
-import { evaluateHunt, transcribeHunt, type HuntEvaluationInput } from './gemini.js';
+import { evaluateHunt, synthesize, transcribeHunt, type HuntEvaluationInput } from './gemini.js';
 import { HUNT_VERDICTS } from './prompts.js';
 
 type HuntTopic = HuntEvaluationInput['mission'] & { id: string; version: number };
@@ -68,9 +68,14 @@ async function normalizePhoto(file: { mime: string; data: Buffer }) {
   }
 }
 
-const models = { evaluate: evaluateHunt, transcribe: transcribeHunt };
+const models = { evaluate: evaluateHunt, transcribe: transcribeHunt, speak: synthesize };
 
-export async function registerHunt(app: FastifyInstance, { ai = models }: { ai?: typeof models }) {
+// Cache giọng Lumo theo câu đã trim, tối đa 64 mục (xóa mục cũ nhất khi đầy).
+const speechCache = new Map<string, { audio: string; mime: string }>();
+const speechCacheMax = 64;
+
+export async function registerHunt(app: FastifyInstance, { ai: override }: { ai?: Partial<typeof models> }) {
+  const ai = { ...models, ...override };
   await app.register(multipart, { limits: { fileSize: maxFileBytes, fieldSize: 8192 } });
   await app.register(rateLimit, { global: false });
 
@@ -98,6 +103,19 @@ export async function registerHunt(app: FastifyInstance, { ai = models }: { ai?:
     const transcript = boundedText(await ai.transcribe(audio.pcm), 5000);
     if (!transcript) throw new HuntError(422, 'NO_SPEECH', 'Chưa nghe rõ lời giải thích. Em có thể ghi lại hoặc nhập chữ.');
     return reply.header('Cache-Control', 'no-store').send({ transcript });
+  });
+
+  app.post('/api/hunt/speak', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req, reply) => {
+    const text = boundedText((req.body as { text?: unknown } | null)?.text, 300);
+    if (!text) throw invalid();
+    let entry = speechCache.get(text);
+    if (!entry) {
+      const speech = await ai.speak(text);
+      entry = { audio: speech.data.toString('base64'), mime: speech.ext === 'mp3' ? 'audio/mpeg' : 'audio/wav' };
+      if (speechCache.size >= speechCacheMax) speechCache.delete(speechCache.keys().next().value!);
+      speechCache.set(text, entry);
+    }
+    return reply.header('Cache-Control', 'no-store').send(entry);
   });
 
   app.post('/api/hunt/evaluate', { config: { rateLimit: { max: 18, timeWindow: '1 minute' } } }, async (req, reply) => {
