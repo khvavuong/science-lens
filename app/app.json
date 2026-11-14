@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "lumoslab",
+    "slug": "lumoslab",
+    "scheme": "lumoslab",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FCF9F2",
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#FCF9F2",
+      "themeColor": "#1E419D"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.lumoslab"
+    },
+    "android": {
+      "package": "app.lumoslab",
+      "adaptiveIcon": {
+        "backgroundColor": "#FCF9F2",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FCF9F2",
+          "image": "./assets/lumoslab-wordmark.png",
+          "imageWidth": 224
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "lumoslab cần camera để bạn chụp một đồ vật và khám phá câu chuyện khoa học phía sau nó.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "lumoslab cần truy cập ảnh để bạn chọn một đồ vật muốn khám phá.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-image",
+      "expo-status-bar",
+      "expo-font",
+      "expo-asset",
+      "expo-video"
+    ]
+  }
+}
