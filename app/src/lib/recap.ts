@@ -21,7 +21,7 @@ export function buildRecap(storyId: string, key: string, photoBase64: string, an
       throw new Error(detail.error ?? `Xuất video bị gián đoạn (${response.status}). Thử lại nhé.`);
     }
     if (!response.headers.get('content-type')?.includes('video/mp4')) throw new Error('Máy chủ chưa trả về MP4 hợp lệ.');
-    const file = new File(Paths.document, `lumoslab-${storyId}-${Date.now()}.mp4`);
+    const file = new File(Paths.document, `lumoslens-${storyId}-${Date.now()}.mp4`);
     file.create();
     await file.write(new Uint8Array(await response.arrayBuffer()));
     await saveRecap(storyId, key, file.uri);

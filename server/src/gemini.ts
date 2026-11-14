@@ -359,7 +359,7 @@ async function elevenLabsPcm(text: string): Promise<{ pcm: Buffer; rate: number 
         method: 'POST',
         signal,
         headers: { 'xi-api-key': key, 'content-type': 'application/json' },
-        body: JSON.stringify({ text, model_id: model, language_code: 'vi' }),
+        body: JSON.stringify({ text, model_id: model, language_code: 'vi', voice_settings: config.elevenlabs.voiceSettings }),
       },
     );
     if (!res.ok) {

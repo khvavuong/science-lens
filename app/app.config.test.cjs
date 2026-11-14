@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const configure = require('./app.config');
-const config = { name: 'LumosLab', ios: { bundleIdentifier: 'app.lumoslab' } };
+const config = { name: 'LumosLens', ios: { bundleIdentifier: 'app.lumoslab' } };
 delete process.env.SCANSCIENCE_SIDELOAD;
 assert.equal(configure({ config }), config);
 process.env.SCANSCIENCE_SIDELOAD = '1';

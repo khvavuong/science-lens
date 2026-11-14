@@ -1,13 +1,13 @@
-# LumosLab · Hướng dẫn thiết kế
+# LumosLens · Hướng dẫn thiết kế
 
-LumosLab giúp học sinh 7–12 tuổi khám phá khoa học từ đồ vật quanh mình. App dùng tiếng Việt, giao diện sáng và bố cục dọc. Mỗi màn hình cần giúp học sinh hiểu mình đang ở đâu, cần làm gì tiếp theo và đã khám phá được gì.
+LumosLens giúp học sinh 7–12 tuổi khám phá khoa học từ đồ vật quanh mình. App dùng tiếng Việt, giao diện sáng và bố cục dọc. Mỗi màn hình cần giúp học sinh hiểu mình đang ở đâu, cần làm gì tiếp theo và đã khám phá được gì.
 
 Tài liệu này ghi lại nhận diện xanh dương và kem vàng đã duyệt cho toàn app. Dùng [theme.ts](app/src/theme.ts) làm nguồn giá trị màu, chữ, khoảng cách và chuyển động khi triển khai. Các quy tắc luồng và nội dung nằm trong [AGENTS.md](AGENTS.md).
 
 ## Nhận diện thương hiệu
 
-- **Tên hiển thị:** lumoslab, viết thường và liền nhau.
-- **Logo chữ:** Dùng chữ cách điệu **lumoslab**, nét đậm bo tròn, phần **lumos** màu navy và phần **lab** màu cyan. Dùng [ảnh logo nền trong suốt](app/assets/lumoslab-wordmark.png) trên màn khởi động, onboarding và Trang chủ. Icon ứng dụng và favicon căn cùng logo chữ trên nền kem.
+- **Tên hiển thị:** lumoslens, viết thường và liền nhau.
+- **Logo chữ:** Dùng chữ cách điệu **lumoslens**, nét đậm bo tròn, phần **lumos** màu navy và phần **lens** màu cyan. Dùng [ảnh logo nền trong suốt](app/assets/lumoslab-wordmark.png) trên màn khởi động, onboarding và Trang chủ. Icon ứng dụng và favicon căn cùng logo chữ trên nền kem.
 - **Đường ánh sáng:** Dùng một kiểu mốc tiến độ xuyên suốt màn Mở đầu, Hành trình và Quiz. Mốc xong là nút xanh có dấu tích, mốc hiện tại là nút vàng, mốc chưa tới là vòng rỗng, mốc khóa có ổ khóa. Kèm nhãn hoặc tên truy cập để học sinh nhận ra trạng thái qua cả hình và chữ.
 - **Giọng điệu:** Tò mò, gần gũi và tôn trọng học sinh. Dùng “bạn”, động từ rõ và câu ngắn. Ví dụ, “Chụp một đồ vật” chỉ dẫn một việc cụ thể. Khi trả lời sai, dùng “Chưa đúng” và giải thích bằng một câu dễ hiểu.
 
@@ -67,7 +67,7 @@ Phong cách tranh sách khoa học thiếu nhi 2.5D. Ưu tiên đồ vật quen 
 
 | Màn hình | Bố cục và điểm nhấn |
 | --- | --- |
-| Khởi động | Logo chữ lumoslab ở giữa trên nền kem. Các nét chữ hiện lần lượt từ trái sang phải. Một cầu nối mềm xuất hiện ngắn giữa «lumos» và «lab». Khi bật Giảm chuyển động, logo đứng yên. |
+| Khởi động | Logo chữ lumoslens ở giữa trên nền kem. Các nét chữ hiện lần lượt từ trái sang phải. Một cầu nối mềm xuất hiện ngắn giữa «lumos» và «lab». Khi bật Giảm chuyển động, logo đứng yên. |
 | Onboarding | Ba bước làm quen, khám phá và quét thử. Ở màn chào, Lumo nghiêng sang trái, ló nửa thân trên từ mép phải, vẫy nhẹ và chớp mắt một lần. Màn cuối hiển thị hồ sơ vật thể chưa nhận diện với bóng 2D navy và dấu hỏi vàng. Hồ sơ nảy nhẹ khi mở, sau đó tia vàng quét một lượt. Khi bật Giảm chuyển động, hồ sơ hiển thị tĩnh. Vuốt ngang, bấm **Tiếp tục** hoặc **Quay lại** để đổi bước. Thanh tiến độ ba đoạn nằm ngay trên nút chính màu xanh dương. **Bỏ qua** mở Trang chủ và **Quét vật thể đầu tiên** mở màn Quét. App ghi nhớ lựa chọn trên thiết bị. |
 | Trang chủ | Logo ở trên, tiêu đề giới thiệu và minh họa. Thanh pill trắng ở đáy có **Khám phá**, **Bản đồ**, nút camera xanh lớn chỉ có icon, **Thử thách** và **Xếp hạng**. Bản đồ mở màn “Sắp ra mắt”. Thử thách mở Săn đồ vật. |
 | Quét vật thể | Ưu tiên ảnh hoặc khung camera. Đặt điều khiển và thẻ kết quả ở phía dưới. Cho chọn ảnh từ thư viện và sửa tên đồ vật khi cần. |
@@ -86,5 +86,5 @@ Phong cách tranh sách khoa học thiếu nhi 2.5D. Ưu tiên đồ vật quen 
 
 ## Tham chiếu
 
-- Duolingo tổ chức bài học theo từng mốc. LumosLab áp dụng cách chỉ rõ bước hiện tại và bước kế tiếp trong Đường ánh sáng. [Thiết kế đường học của Duolingo](https://blog.duolingo.com/new-duolingo-home-screen-design/)
-- Khan Academy Kids sử dụng minh họa và nhân vật để giới thiệu hoạt động. Với nhóm tuổi 7–12 của LumosLab, ưu tiên đồ vật quen thuộc và hình thể hiện hiện tượng khoa học. [Giới thiệu Khan Academy Kids](https://go.learn.khanacademy.org/khanacademy/blog)
+- Duolingo tổ chức bài học theo từng mốc. LumosLens áp dụng cách chỉ rõ bước hiện tại và bước kế tiếp trong Đường ánh sáng. [Thiết kế đường học của Duolingo](https://blog.duolingo.com/new-duolingo-home-screen-design/)
+- Khan Academy Kids sử dụng minh họa và nhân vật để giới thiệu hoạt động. Với nhóm tuổi 7–12 của LumosLens, ưu tiên đồ vật quen thuộc và hình thể hiện hiện tượng khoa học. [Giới thiệu Khan Academy Kids](https://go.learn.khanacademy.org/khanacademy/blog)

@@ -48,4 +48,3 @@ Inspect each output at native size, at its intended display size, and beside the
 - Stable identity across poses; transparent wearable layers fit the pet.
 
 Correct the source artwork rather than hiding drift with CSS blur, opacity, saturation, or contrast. Revise failed attributes and state what remains pending. Approval of one pet asset does not approve other assets or product UI.
-

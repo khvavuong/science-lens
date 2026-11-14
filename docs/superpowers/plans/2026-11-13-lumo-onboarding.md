@@ -5,7 +5,7 @@
 **Goal:** Turn first launch into the approved Lumo-led three-step introduction.
 **Architecture:** Keep first-launch routing and persistence in Home. Render the current step, local illustration, progress and controls in WelcomeScreen.
 **Tech Stack:** Expo 58, React Native, expo-image and AsyncStorage.
-**Spec:** [Onboarding LumosLab với Lumo](../specs/2026-11-13-lumo-onboarding-design.md)
+**Spec:** [Onboarding LumosLens với Lumo](../specs/2026-11-13-lumo-onboarding-design.md)
 
 ## Global Constraints
 

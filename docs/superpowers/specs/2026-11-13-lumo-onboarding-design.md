@@ -1,4 +1,4 @@
-# Onboarding LumosLab với Lumo
+# Onboarding LumosLens với Lumo
 
 **Đã duyệt luồng ba bước.**
 

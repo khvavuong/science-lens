@@ -1,6 +1,6 @@
 # Bộ icon Lumo cho Trang chủ
 
-Bộ icon riêng cho năm nút trên thanh pill của LumosLab. Mỗi nút cần dễ nhận ra khi nhìn nhanh ở kích thước hiển thị trên điện thoại.
+Bộ icon riêng cho năm nút trên thanh pill của LumosLens. Mỗi nút cần dễ nhận ra khi nhìn nhanh ở kích thước hiển thị trên điện thoại.
 
 ## Hướng đã chọn
 

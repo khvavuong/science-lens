@@ -30,4 +30,3 @@ Inputs: robot-identity-master.png = identity and fit authority; approved-map-bas
 Keep navy mortarboard, gold tassel, antenna clearance; simplify folds and highlights.
 Single centered item, generous padding, transparent PNG with actual alpha.
 Acceptance: clear tassel at 48px; no clipping, glossy lighting or neighboring objects; wearable alignment is a separate check.
-

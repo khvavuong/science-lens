@@ -25,7 +25,7 @@ export async function renderRecap(photo: Buffer, clip: Buffer, label: string, fa
     };
     await caption('intro.png', `TƯỞNG QUEN?\nNHÌN KỸ NÈ!`);
     await caption('fact.png', `BÍ MẬT BẬT MÍ\n${fact.slice(0, 180)}`);
-    await caption('outro.png', `NÃO VỪA LÊN LEVEL\n${score}/${total} câu đúng\nBạn được mấy điểm?\nLumosLab`);
+    await caption('outro.png', `NÃO VỪA LÊN LEVEL\n${score}/${total} câu đúng\nBạn được mấy điểm?\nLumosLens`);
     const filter = `[0:v]fps=24,setsar=1,setpts=PTS-STARTPTS[p];[p][3:v]overlay=48:180:enable='gte(t,0.15)'[a];[1:v]scale=720:1280:force_original_aspect_ratio=decrease,pad=720:1280:(ow-iw)/2:(oh-ih)/2:color=0x0F2452,fps=24,setsar=1,setpts=PTS-STARTPTS[q];[q][4:v]overlay=48:H-h-260[b];[2:v]fps=24,setsar=1,setpts=PTS-STARTPTS[r];[r][5:v]overlay=48:(H-h)/2-60[c];[a][b][c]concat=n=3:v=1:a=0[out];[6:a]apad,atrim=duration=${seconds}[voice]`;
     await new Promise<void>((resolve, reject) => {
       const child = spawn(ffmpeg!, ['-y','-loglevel','error','-filter_complex_threads','1','-loop','1','-t','4','-i','photo.jpg','-stream_loop','-1','-t',String(seconds - 8),'-i','clip.mp4','-loop','1','-t','4','-i','end.png','-i','intro.png','-i','fact.png','-i','outro.png','-i','voice.wav','-filter_complex',filter,'-map','[out]','-map','[voice]','-t',String(seconds),'-c:a','aac','-b:a','96k','-c:v','libx264','-threads','2','-preset','veryfast','-b:v','600k','-maxrate','700k','-bufsize','1400k','-pix_fmt','yuv420p','-movflags','+faststart','out.mp4'], { cwd: dir, timeout: 90_000 });

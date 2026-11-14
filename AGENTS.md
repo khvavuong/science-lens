@@ -1,4 +1,4 @@
-# AGENTS.md — LumosLab
+# AGENTS.md — LumosLens
 
 Hướng dẫn cho AI coding agent (và dev mới) làm việc trong repo này.
 Nguồn yêu cầu sản phẩm: `LumosLab_UIUX_Design_Specification.docx` (gọi tắt "spec"). Khi code và spec mâu thuẫn, spec thắng, trừ các quyết định đã chốt ở mục "Quyết định đã chốt".
@@ -69,13 +69,14 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 - **Bắt buộc `apiVersion: 'v1beta'`**: SDK `@google/genai` 3.x mặc định v1, mà v1 không nhận JSON mode/`responseJsonSchema` và `speechConfig`.
 - **Thinking:** model 3.x dùng `thinkingLevel`, model 2.5 dùng `thinkingBudget` (xem `thinkingFor`). Planner dùng `low`: `medium` mất ~50s thay vì ~10s.
 - **Độ trễ dao động mạnh**: cùng model lúc 10s, lúc >45s. Nhận diện và planner dùng `hedged()` (stagger 6s/12s); mọi lệnh gọi phải có timeout. `gemini-3.5-flash` hay treo khi nhận ảnh nên vision dùng `gemini-2.5-flash` trước.
-- **Giọng kể:** có `ELEVEN_LAB_KEY` → chỉ dùng ElevenLabs (giọng `ELEVENLABS_VOICE_ID`, mặc định "Saigon Lily"; model `eleven_v4` rồi `eleven_turbo_v2_5`, xuất PCM 24kHz → mp3). Lỗi thì asset `error` → app đọc bằng expo-speech, **không** quay về Gemini TTS. Không có key → Gemini TTS như dưới.
+- **Giọng kể:** có `ELEVEN_LAB_KEY` → chỉ dùng ElevenLabs (giọng `ELEVENLABS_VOICE_ID`, mặc định "Saigon Lily"; model `eleven_v4` rồi `eleven_turbo_v2_5`, xuất PCM 24kHz → mp3; `voiceSettings` trong config cho giọng kể sôi nổi: stability 0.35, style 0.45, speed 1.05, chỉnh qua `ELEVENLABS_STABILITY/STYLE/SPEED`). Lỗi thì asset `error` → app đọc bằng expo-speech, **không** quay về Gemini TTS. Không có key → Gemini TTS như dưới.
 - **TTS đọc nguyên văn MỌI chữ**: không bao giờ chèn câu chỉ dẫn giọng vào `contents` (đã từng bị đọc thành tiếng). Model TTS không nhận `systemInstruction`. Cách kiểm chứng audio: cho `gemini-2.5-flash` chép lại file.
 - **Free tier:** ảnh có quota = 0 (cần billing); mỗi model TTS khoảng 10 request/ngày. `withModels` coi 429 có `limit: 0` hoặc `per day` là hết quota → cooldown model 1 giờ, chuyển ngay model kế tiếp. Đừng xóa danh sách model dự phòng trong `config.ts`.
 - Thứ tự tạo asset: voice mở đầu → ảnh/voice cảnh 1 → các cảnh còn lại (audio song song 3, ảnh song song 2).
 - **Video** (`gemini-omni-1.2-flash`, gọi qua `ai.interactions.create`, không phải `generateVideos`; Veo 3.1 preview đã ngừng 22/10/2026): planner đánh dấu `video_worthy` cho tối đa `VIDEO_MAX_SCENES` cảnh. Video của một cảnh chỉ chạy khi ảnh (làm khung đầu) và voice (làm độ dài, cộng 1 giây, giới hạn 3–15 giây) của cảnh đó xong; hàng đợi riêng (song song 2), không chặn ảnh/audio. Video có âm thanh gốc nhưng app **luôn tắt tiếng** và dùng `audioMixingMode: 'mixWithOthers'` để không cắt giọng kể. **Không có free tier**: mỗi truyện khoảng $1.5 ở 720p. Tắt bằng `VIDEO_ENABLED=0`.
 - Lỗi 402 (hết credit trả trước) được coi như hết quota: cooldown model 1 giờ. Lỗi 404 (model đã ngừng cho key này, vd. `gemini-2.5-flash` với key tạo sau 11/2026) → bỏ qua model 24 giờ.
 - Key free tier: nhận diện, planner, TTS chạy được; **ảnh và video đều `limit: 0`** → cần bật billing. Thiếu ảnh thì video của cảnh đó bị bỏ qua (`error: 'skipped'`).
+- Giọng văn: vui nhộn, có hook mỗi cảnh, chỉ 2–3 câu trending cả truyện (xem mục FUN, PLAYFUL VOICE trong `prompts.ts`). Nới lỏng câu chữ là model lạm dụng trend và vượt 60 từ/cảnh.
 - Prompt planner phải giữ: dấu câu đầy đủ (thiếu thì model bỏ hết dấu phẩy/hỏi), năm viết bằng chữ số, 40–60 từ/cảnh.
 - Test thủ công bằng `curl` lên server **tốn quota thật**; lặp lại cùng label để dùng cache.
 - **Chép lời ghi âm** (`transcribeHunt`): gửi mp3 32 kbps, không gửi WAV (WAV chậm gấp đôi, chép lời không chính xác hơn). Dùng `hedged()` với `MODEL_TRANSCRIBE` (flash-lite trước). Đo 11/2026: khoảng 2,5–3 giây cho bản ghi 19 giây.

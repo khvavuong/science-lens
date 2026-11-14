@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "lumoslab",
+    "name": "lumoslens",
     "slug": "lumoslab",
     "scheme": "lumoslab",
     "version": "1.0.0",
@@ -39,7 +39,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "lumoslab cần camera để bạn chụp một đồ vật và khám phá câu chuyện khoa học phía sau nó.",
+          "cameraPermission": "lumoslens cần camera để bạn chụp một đồ vật và khám phá câu chuyện khoa học phía sau nó.",
           "microphonePermission": false,
           "recordAudioAndroid": false
         }
@@ -47,7 +47,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "lumoslab cần truy cập ảnh để bạn chọn một đồ vật muốn khám phá.",
+          "photosPermission": "lumoslens cần truy cập ảnh để bạn chọn một đồ vật muốn khám phá.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -55,7 +55,7 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "LumosLab cần micro khi em chọn ghi âm lời giải thích cho thử thách.",
+          "microphonePermission": "lumoslens cần micro khi em chọn ghi âm lời giải thích cho thử thách.",
           "recordAudioAndroid": true
         }
       ],

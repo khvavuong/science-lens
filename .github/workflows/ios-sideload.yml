@@ -33,12 +33,15 @@ jobs:
       - name: Build unsigned device archive
         run: |
           set -o pipefail
-          xcodebuild -workspace ios/LumosLab.xcworkspace -scheme LumosLab -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/LumosLab.xcarchive" archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$RUNNER_TEMP/xcodebuild.log"
+          workspace=$(find ios -maxdepth 1 -name '*.xcworkspace' -print -quit)
+          test -n "$workspace"
+          scheme=$(basename "$workspace" .xcworkspace)
+          xcodebuild -workspace "$workspace" -scheme "$scheme" -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/LumosLens.xcarchive" archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO | tee "$RUNNER_TEMP/xcodebuild.log"
       - name: Package IPA
         run: |
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
-          cp -R "$RUNNER_TEMP/LumosLab.xcarchive/Products/Applications/"*.app "$RUNNER_TEMP/ipa/Payload/"
-          test -f "$RUNNER_TEMP/ipa/Payload/LumosLab.app/Info.plist"
+          cp -R "$RUNNER_TEMP/LumosLens.xcarchive/Products/Applications/"*.app "$RUNNER_TEMP/ipa/Payload/"
+          test -f "$RUNNER_TEMP/ipa/Payload/"*.app/Info.plist
           cd "$RUNNER_TEMP/ipa"
           ditto -c -k --sequesterRsrc --keepParent Payload ScanScience-unsigned.ipa
           unzip -t ScanScience-unsigned.ipa

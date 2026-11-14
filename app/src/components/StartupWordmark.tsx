@@ -33,7 +33,7 @@ export function StartupWordmark({ onIntroEnd }: { onIntroEnd: () => void }) {
   if (staticLogo) return <Wordmark width={logoWidth} />;
 
   return (
-    <View accessible accessibilityRole="image" accessibilityLabel="lumoslab" style={styles.logo}>
+    <View accessible accessibilityRole="image" accessibilityLabel="lumoslens" style={styles.logo}>
       {reduced === false && (
         <Image
           source={wordmarkIntro}
