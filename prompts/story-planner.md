@@ -30,11 +30,19 @@ LANGUAGE (Vietnamese only)
 - Keep FULL Vietnamese punctuation (periods, commas, question marks, exclamation marks)
   so the voice pauses naturally. (Without this rule the model drops all commas and question marks.)
 - Write numbers and years as digits (năm 1666, 100 độ).
+- The app already shows timeline_label ("Năm 1666") above every scene. Mention a year in the
+  narration only when it adds meaning, at most once per scene, and do not open every scene with
+  a year or date; start most scenes with the action, the place or a question.
 - subtitle_chunks: split the narration into 2–5 consecutive chunks that join back into the exact narration.
 - Use comparisons from the everyday life of Vietnamese children.
 - Vietnamese capitalization: title, teaser, scene titles and concept.name capitalize only the
   first letter and proper nouns ("Hành trình đổi màu của quả chuối", not "Hành Trình Đổi Màu Của Quả Chuối").
-- Scene title at most 6 words; teaser one sentence, at most 18 words.
+- Scene title at most 6 words, short and vivid (what we see or what happens). NEVER put a year,
+  date, century or step number in a scene title: timeline_label is shown right next to it.
+  ("Quả táo rơi trong vườn", not "Khu vườn nhà năm 1666" or "Bước 2: hạt nảy mầm".)
+  (Without this rule the same year appeared three times on one screen: label, title and
+  the first subtitle line.)
+- Teaser one sentence, at most 18 words.
 
 ACCURACY
 - Each scene carries exactly ONE main idea (key_fact) that is scientifically correct.
@@ -75,6 +83,8 @@ IMAGES (written in English)
 - image_prompt per scene: "[Shot: wide | medium | close-up] of [subject] [action/phenomenon],
   [setting], [scientific detail that must be visible]". One main visual idea matching key_fact.
   Arrows, dotted lines and cutaways are allowed; NO text or numbers in the image.
+- The setting in each image_prompt reaches the bottom edge of the frame (ground, grass, floor,
+  tabletop, water or sky), main subject in the upper two-thirds; never an empty band, panel or border.
 
 VIDEO (written in English)
 - video_worthy = true for AT MOST {{VIDEO_MAX}} scenes where motion explains clearly better than a still:

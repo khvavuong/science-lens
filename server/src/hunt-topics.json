@@ -1,0 +1,52 @@
+[
+  {
+    "id": "friction",
+    "version": 1,
+    "title": "Ma sát quanh em",
+    "task": "Tìm ba vật có bề mặt giúp bám hoặc làm vật khác khó trượt.",
+    "hint": "Hãy để ý những bề mặt giúp một vật đứng yên hoặc giúp em đỡ trượt.",
+    "criteria": "Nêu hai bề mặt chạm nhau và cách việc tiếp xúc giúp bám hay cản trượt. Chấp nhận cách nói đời thường như “đỡ trượt”.",
+    "icon": "footsteps-outline",
+    "required": 3
+  },
+  {
+    "id": "magnetism",
+    "version": 1,
+    "title": "Nam châm hút gì?",
+    "task": "Tìm ba vật mà em quan sát thấy bị nam châm hút.",
+    "hint": "Hãy để ý vật di chuyển thế nào khi em đưa một nam châm quen thuộc lại gần.",
+    "criteria": "Nêu điều đã quan sát khi đưa nam châm tới gần, như vật dịch về phía nam châm hoặc dính vào nó. Ảnh chỉ cần cho thấy vật.",
+    "icon": "magnet-outline",
+    "required": 3
+  },
+  {
+    "id": "absorption",
+    "version": 1,
+    "title": "Vật nào thấm nước?",
+    "task": "Tìm ba vật có thể hút nước vào bên trong.",
+    "hint": "Hãy để ý xem giọt nước ở trên bề mặt hay lan vào trong vật.",
+    "criteria": "Nêu dấu hiệu cho thấy nước thấm vào vật, như vết ướt lan hoặc vật giữ lại một phần nước.",
+    "icon": "water-outline",
+    "required": 3
+  },
+  {
+    "id": "sound",
+    "version": 1,
+    "title": "Âm thanh quanh em",
+    "task": "Tìm ba vật có thể phát ra âm thanh khi em gõ nhẹ, lắc hoặc vò.",
+    "hint": "Hãy để ý em đã làm gì với vật và nghe thấy âm thanh như thế nào.",
+    "criteria": "Nêu thao tác và âm thanh nghe được, chẳng hạn sột soạt, lách cách hoặc tiếng trầm. Ảnh chỉ cần cho thấy vật.",
+    "icon": "musical-notes-outline",
+    "required": 3
+  },
+  {
+    "id": "elasticity",
+    "version": 1,
+    "title": "Đàn hồi quanh em",
+    "task": "Tìm ba vật có thể trở về gần hình dạng ban đầu sau khi bóp hoặc kéo nhẹ.",
+    "hint": "Quan sát hình dạng của vật trước khi bóp hoặc kéo nhẹ và sau khi thả tay.",
+    "criteria": "Mô tả vật đổi hình khi bóp hoặc kéo và về gần hình dạng ban đầu khi thả tay.",
+    "icon": "resize-outline",
+    "required": 3
+  }
+]

@@ -1,20 +1,19 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { ChoiceOption } from '@/components/ChoiceOption';
 import { OrbitPhoto } from '@/components/Illustrations';
-import { VerticalStep, type NodeState } from '@/components/Trail';
 import { mediaUrl, type AssetStatus } from '@/lib/api';
 import { useJourney } from '@/lib/store';
 import { useNarration } from '@/lib/useNarration';
-import { colors, font, radius, space, type } from '@/theme';
+import { colors, font, radius, space, touch, type } from '@/theme';
 
 const MAX_WAIT_MS = 25000; // Sau thời gian này cho vào truyện dù ảnh chưa xong (dùng ảnh gốc).
 
-const fromAsset = (s?: AssetStatus): NodeState => (s === 'ready' ? 'done' : s === 'error' ? 'skipped' : 'loading');
+type Step = 'done' | 'current' | 'todo';
 
 export default function Prelude() {
   const insets = useSafeAreaInsets();
@@ -57,102 +56,120 @@ export default function Prelude() {
     router.replace({ pathname: '/story', params: { autoplay: '1' } });
   };
 
-  const steps: { label: string; detail?: string; state: NodeState }[] = [
-    { label: 'Nhận ra đồ vật', state: 'done' },
-    { label: 'Chọn câu chuyện', state: failed ? 'skipped' : plan ? 'done' : 'loading' },
-    {
-      label: 'Chuẩn bị giọng kể',
-      state: plan ? fromAsset(story?.assets.prelude_audio.status) : 'todo',
-      detail: story?.assets.prelude_audio.status === 'error' ? 'Dùng giọng của máy' : undefined,
-    },
-    {
-      label: 'Vẽ cảnh đầu tiên',
-      state: plan ? fromAsset(s1?.image.status) : 'todo',
-      detail: s1?.image.status === 'error' ? 'Dùng ảnh bạn chụp' : undefined,
-    },
-  ];
+  // Tiến trình thật (không % giả): nhận diện → chọn truyện → giọng kể → cảnh đầu tiên.
+  const preludeAudio = story?.assets.prelude_audio.status;
+  const finished = (s?: AssetStatus) => !!plan && s !== undefined && s !== 'pending';
+  const doneFlags = [true, !!plan, finished(preludeAudio), finished(s1?.image.status)];
+  const firstPending = doneFlags.indexOf(false);
+  const steps: Step[] = doneFlags.map((d, i) => (d ? 'done' : i === firstPending ? 'current' : 'todo'));
+  const status = !plan
+    ? `Đang chọn câu chuyện về ${label}…`
+    : !finished(preludeAudio) ? 'Đang chuẩn bị giọng kể…'
+    : !finished(s1?.image.status) ? 'Đang vẽ cảnh đầu tiên…'
+    : 'Sắp xong rồi…';
+
+  // Fallback vẫn báo cho bạn nhỏ biết, nhưng gọn trong một dòng dưới nút.
+  const fallbacks: string[] = [];
+  if (preludeAudio === 'error' || s1?.audio.status === 'error') fallbacks.push('giọng của máy');
+  if (s1?.image.status === 'error') fallbacks.push('ảnh bạn chụp');
 
   return (
     <View style={styles.root}>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingTop: insets.top + space.sm }]} showsVerticalScrollIndicator={false}>
-        <View style={styles.topRow}>
-          <IconButton icon="chevron-back" label="Quay lại" onPress={() => router.back()} />
+        {/* Ảnh đồ vật nằm giữa hai nút để tiết kiệm chiều cao cho câu hỏi bí ẩn. */}
+        <View style={styles.header}>
+          <IconButton icon="chevron-back" label="Quay lại" size={touch} onPress={() => router.back()} />
+          <OrbitPhoto uri={photo?.uri} size={84} />
           <Pressable
             onPress={() => voice.canPlay && voice.toggle()}
             disabled={!voice.canPlay}
             accessibilityRole="button"
             accessibilityLabel={voice.playing ? 'Tạm dừng lời mở đầu' : 'Nghe lời mở đầu'}
-            style={({ pressed }) => [styles.voiceBtn, voice.playing && styles.voiceOn, pressed && { opacity: 0.8 }]}
+            accessibilityState={{ disabled: !voice.canPlay }}
+            style={({ pressed }) => [styles.voiceBtn, voice.playing && styles.voiceOn, !voice.canPlay && styles.voiceOff, pressed && styles.pressed]}
           >
-            {!voice.canPlay ? <ActivityIndicator size="small" color={colors.brand} />
-              : <Ionicons name={voice.playing ? 'pause' : 'volume-high'} size={20} color={voice.playing ? colors.white : colors.navy} />}
+            <Ionicons name={voice.playing ? 'pause' : 'volume-high'} size={22} color={voice.playing ? colors.white : colors.navy} />
           </Pressable>
         </View>
 
-        <OrbitPhoto uri={photo?.uri} size={118} />
-
-        {!plan && !failed && (
-          <View style={styles.loading}>
-            <ActivityIndicator color={colors.brand} />
-            <Text style={[type.bodyStrong, { flex: 1 }]}>Đang chọn câu chuyện về {label}…</Text>
-          </View>
-        )}
-
         {failed && (
-          <View style={{ gap: space.md }}>
+          <View style={styles.block}>
             <Text style={type.h2}>{story?.status === 'unsafe' ? 'Mình chưa tìm được câu chuyện phù hợp' : 'Chưa tạo được câu chuyện'}</Text>
-            <Text style={[type.body, { color: colors.muted }]}>{storyError ?? 'Bạn thử lại hoặc chụp một đồ vật khác nhé.'}</Text>
+            <Text style={[type.body, styles.muted]}>{storyError ?? 'Bạn thử lại hoặc chụp một đồ vật khác nhé.'}</Text>
             {story?.status !== 'unsafe' && (
               <Button label="Thử lại" variant="secondary" icon="refresh" onPress={() => { useJourney.setState({ story: null, storyError: null }); void startStory(label); }} />
             )}
           </View>
         )}
 
+        {/* Khung chờ tĩnh đúng vị trí tiêu đề và câu hỏi, để màn không trống khi đang chọn truyện. */}
+        {!plan && !failed && (
+          <View style={styles.block} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+            <View style={styles.titleText}>
+              <View style={[styles.skelLine, { width: '78%' }]} />
+              <View style={[styles.skelLine, { width: '52%' }]} />
+            </View>
+            <View style={styles.mystery}>
+              <View style={[styles.skelDark, { width: '70%', height: 18 }]} />
+              {[0, 1, 2].map((i) => <View key={i} style={[styles.skelDark, styles.skelOption]} />)}
+            </View>
+          </View>
+        )}
+
         {plan && (
-          <>
-            <View style={{ gap: space.sm }}>
+          <View style={styles.block}>
+            <View style={styles.titleText}>
               <Text style={type.h1} accessibilityRole="header">{plan.title}</Text>
-              <Text style={[type.body, { color: colors.muted }]}>{plan.teaser}</Text>
+              <Text style={[type.body, styles.muted]} numberOfLines={3}>{plan.teaser}</Text>
             </View>
 
             <View style={styles.mystery}>
               <View style={styles.mysteryHead}>
-                <View style={styles.qMark}><Text style={styles.qMarkText}>?</Text></View>
-                <Text style={styles.mysteryQ}>{plan.mystery_question.question}</Text>
+                <View style={styles.qMark}>
+                  {mysteryChoice === null
+                    ? <Text style={styles.qMarkText}>?</Text>
+                    : <Ionicons name="checkmark" size={16} color={colors.navy} />}
+                </View>
+                <Text style={styles.mysteryHint} accessibilityLiveRegion="polite">
+                  {mysteryChoice === null ? 'Đoán thử trước, đáp án có trong truyện' : 'Đã ghi lại dự đoán của bạn'}
+                </Text>
               </View>
-              <View style={{ gap: 8 }} accessibilityRole="radiogroup">
+              <Text style={styles.mysteryQ}>{plan.mystery_question.question}</Text>
+              <View style={styles.options} accessibilityRole="radiogroup">
                 {plan.mystery_question.options.map((o, i) => (
                   <ChoiceOption key={i} tone="dark" index={i} text={o} state={mysteryChoice === i ? 'selected' : 'idle'} onPress={() => setMystery(i)} />
                 ))}
               </View>
-              <Text style={styles.mysteryHint}>
-                {mysteryChoice === null ? 'Đoán thử nhé, đáp án có trong truyện.' : 'Nghe truyện để biết đáp án nhé!'}
-              </Text>
             </View>
-          </>
-        )}
-
-        {!failed && (
-          <View accessibilityLabel="Tiến trình chuẩn bị">
-            {steps.map((s, i) => (
-              <VerticalStep key={s.label} state={s.state} last={i === steps.length - 1} size={22}>
-                <Text style={[styles.stepText, s.state === 'todo' && { color: colors.muted }, s.state === 'loading' && styles.stepActive]}>{s.label}</Text>
-                {s.detail && <Text style={type.caption}>{s.detail}</Text>}
-              </VerticalStep>
-            ))}
           </View>
         )}
       </ScrollView>
 
-      {plan && (
+      {!failed && (
         <View style={[styles.cta, { paddingBottom: insets.bottom + space.md }]}>
+          {!canStart && (
+            <View
+              style={styles.status}
+              accessible
+              accessibilityLiveRegion="polite"
+              accessibilityLabel={`${status} Bước ${firstPending < 0 ? steps.length : firstPending + 1} trên ${steps.length}.`}
+            >
+              <View style={styles.bars}>
+                {steps.map((s, i) => <View key={i} style={[styles.bar, styles[s]]} />)}
+              </View>
+              <Text style={[type.caption, styles.statusText]} numberOfLines={1}>{status}</Text>
+            </View>
+          )}
           <Button
-            label={canStart ? 'Vào câu chuyện' : 'Đang vẽ cảnh đầu tiên…'}
+            label="Vào câu chuyện"
             icon={canStart ? 'play' : undefined}
             loading={!canStart}
             disabled={!canStart}
             onPress={enter}
           />
+          {canStart && fallbacks.length > 0 && (
+            <Text style={[type.caption, styles.note]}>Truyện sẽ dùng {fallbacks.join(' và ')}.</Text>
+          )}
         </View>
       )}
     </View>
@@ -161,18 +178,32 @@ export default function Prelude() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  scroll: { paddingHorizontal: space.lg, paddingBottom: space.xl, gap: space.lg },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  voiceBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.bgAlt, alignItems: 'center', justifyContent: 'center' },
+  scroll: { paddingHorizontal: space.lg, paddingBottom: space.lg, gap: space.md },
+  header: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
+  voiceBtn: { width: touch, height: touch, borderRadius: touch / 2, backgroundColor: colors.bgAlt, alignItems: 'center', justifyContent: 'center' },
   voiceOn: { backgroundColor: colors.brand },
-  loading: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md, borderRadius: radius.md, backgroundColor: colors.bgAlt },
-  mystery: { borderRadius: radius.xl, backgroundColor: colors.navy, padding: 18, gap: 14 },
-  mysteryHead: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
-  qMark: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.lumen, alignItems: 'center', justifyContent: 'center' },
-  qMarkText: { fontFamily: font.black, fontSize: 20, color: colors.navy },
-  mysteryQ: { flex: 1, fontFamily: font.bold, fontSize: 18, lineHeight: 25, color: colors.white },
-  mysteryHint: { fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.onDarkMuted },
-  stepText: { fontFamily: font.medium, fontSize: 15, lineHeight: 22, color: colors.text },
-  stepActive: { fontFamily: font.bold, color: colors.navy },
-  cta: { paddingHorizontal: space.lg, paddingTop: space.sm, backgroundColor: colors.bg },
+  voiceOff: { opacity: 0.45 },
+  pressed: { opacity: 0.8 },
+  block: { gap: space.md },
+  titleText: { gap: space.xs },
+  muted: { color: colors.muted },
+  mystery: { borderRadius: radius.xl, backgroundColor: colors.navy, padding: space.md, gap: 12 },
+  mysteryHead: { flexDirection: 'row', gap: space.sm, alignItems: 'center' },
+  qMark: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.lumen, alignItems: 'center', justifyContent: 'center' },
+  qMarkText: { fontFamily: font.black, fontSize: 14, color: colors.navy },
+  mysteryHint: { flex: 1, fontFamily: font.medium, fontSize: 13, lineHeight: 18, color: colors.onDarkMuted },
+  mysteryQ: { fontFamily: font.bold, fontSize: 18, lineHeight: 25, color: colors.white },
+  options: { gap: space.sm },
+  skelLine: { height: 22, borderRadius: radius.sm / 2, backgroundColor: colors.surface },
+  skelDark: { borderRadius: radius.sm / 2, backgroundColor: colors.navySoft },
+  skelOption: { height: 50, borderRadius: 14 },
+  cta: { paddingHorizontal: space.lg, paddingTop: space.sm, backgroundColor: colors.bg, gap: space.sm },
+  status: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  bars: { flexDirection: 'row', gap: space.xs },
+  bar: { width: 16, height: 4, borderRadius: 2 },
+  done: { backgroundColor: colors.brand },
+  current: { backgroundColor: colors.lumen },
+  todo: { backgroundColor: colors.divider },
+  statusText: { flex: 1 },
+  note: { textAlign: 'center' },
 });

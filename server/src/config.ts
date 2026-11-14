@@ -11,6 +11,8 @@ export const config = {
   models: {
     // Danh sách theo thứ tự ưu tiên; model sau dùng khi model trước quá tải (503) hoặc lỗi.
     vision: (process.env.MODEL_VISION ?? 'gemini-2.5-flash,gemini-3.1-flash-lite').split(','),
+    // Chép lời ghi âm (thử thách): flash-lite nhanh hơn và chép tiếng Việt chính xác hơn 2.5-flash.
+    transcribe: (process.env.MODEL_TRANSCRIBE ?? 'gemini-3.1-flash-lite,gemini-2.5-flash').split(','),
     planner: (process.env.MODEL_PLANNER ?? 'gemini-3.5-flash,gemini-2.5-flash,gemini-3.1-flash-lite').split(','),
     image: (process.env.MODEL_IMAGE ?? 'gemini-3.1-flash-image,gemini-2.5-flash-image').split(','),
     // Free tier: mỗi model TTS chỉ ~10 request/ngày → xếp nhiều model để cộng dồn quota.

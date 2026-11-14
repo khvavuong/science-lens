@@ -10,6 +10,16 @@ import { TrailNode, type NodeState } from './Trail';
 
 const H = Dimensions.get('window').height;
 
+/** Tiêu đề đã chứa nhãn mốc (vd. nhãn "Năm 1666", tiêu đề "Khu vườn nhà năm 1666") → không lặp nhãn. */
+export function titleRepeatsLabel(title: string, label: string) {
+  const t = title.toLocaleLowerCase('vi');
+  const l = label.trim().toLocaleLowerCase('vi');
+  if (!l) return false;
+  if (t.includes(l)) return true;
+  const num = l.match(/\d+/)?.[0];
+  return !!num && new RegExp(`(^|\\D)${num}(\\D|$)`).test(t);
+}
+
 /**
  * Bottom sheet "Hành trình khám phá": đường ánh sáng dọc.
  * Đã xem → chạm để nghe lại. Bước kế tiếp → mở được. Xa hơn → khóa (chỉ xem tiêu đề).
@@ -61,7 +71,6 @@ export function RoadmapSheet({ visible, onClose, scenes, current, maxViewed, mod
         <View {...pan.panHandlers} style={styles.header}>
           <View style={styles.grabber} />
           <Text style={type.h1}>Hành trình khám phá</Text>
-          <Text style={[type.caption, { fontSize: 14 }]}>Chạm bước đã xem để nghe lại.</Text>
         </View>
         <ScrollView contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: space.sm }}>
           {scenes.map((s, i) => {
@@ -70,7 +79,12 @@ export function RoadmapSheet({ visible, onClose, scenes, current, maxViewed, mod
             const open = i <= maxViewed + 1;
             const last = i === scenes.length - 1;
             const state: NodeState = isCur ? 'current' : viewed ? 'done' : open ? 'todo' : 'locked';
-            const tag = isCur ? 'Đang xem' : viewed ? (mode === 'historical' ? s.timeline_label : `Bước ${i + 1}`) : open ? 'Tiếp theo' : 'Chưa mở';
+            // Nhãn mốc: năm (bỏ nếu tiêu đề đã có năm) hoặc "Bước n". Trạng thái đã xem/khóa đã rõ qua icon.
+            const mark = mode === 'historical'
+              ? (titleRepeatsLabel(s.title, s.timeline_label) ? '' : s.timeline_label)
+              : `Bước ${i + 1}`;
+            const tag = isCur ? 'Đang xem' : viewed ? mark : open ? 'Tiếp theo' : '';
+            const a11yTag = tag || (open ? mark || `Bước ${i + 1}` : 'Chưa mở');
             return (
               <Pressable
                 key={s.id}
@@ -78,7 +92,7 @@ export function RoadmapSheet({ visible, onClose, scenes, current, maxViewed, mod
                 onPress={() => { haptic.select(); onSelect(i); }}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: !open, selected: isCur }}
-                accessibilityLabel={`${tag}. ${s.title}${viewed && !isCur ? '. Chạm để nghe lại' : ''}`}
+                accessibilityLabel={`${a11yTag}. ${s.title}${viewed && !isCur ? '. Chạm để nghe lại' : ''}`}
                 style={({ pressed }) => [styles.item, pressed && open && { opacity: 0.7 }]}
               >
                 <View style={styles.rail}>
@@ -86,9 +100,9 @@ export function RoadmapSheet({ visible, onClose, scenes, current, maxViewed, mod
                   {!last && <View style={[styles.line, i < maxViewed && styles.lineDone]} />}
                 </View>
                 <View style={[styles.body, isCur && styles.bodyCur]}>
-                  <Text style={[styles.tag, !open && { color: colors.muted }, isCur && { color: colors.navy }]}>{tag}</Text>
+                  {!!tag && <Text style={[styles.tag, isCur && { color: colors.navy }]}>{tag}</Text>}
                   <Text style={[styles.title, !open && { color: colors.muted }]}>{s.title}</Text>
-                  {(viewed || isCur) && <Text style={styles.fact} numberOfLines={3}>{s.key_fact}</Text>}
+                  {(viewed || isCur) && <Text style={styles.fact} numberOfLines={2}>{s.key_fact}</Text>}
                   {s.is_legend && viewed && (
                     <View style={styles.legend}>
                       <Ionicons name="chatbubble-ellipses-outline" size={12} color={colors.muted} />

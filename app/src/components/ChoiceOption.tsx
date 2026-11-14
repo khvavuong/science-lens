@@ -24,7 +24,7 @@ export function ChoiceOption({ index, text, state, onPress, disabled, tone = 'li
       onPress={() => { haptic.select(); onPress(); }}
       style={({ pressed }) => [
         styles.row,
-        tone === 'dark' && styles.rowDark,
+        tone === 'dark' ? styles.rowDark : styles.rowLight,
         { backgroundColor: s.bg, borderColor: s.border },
         pressed && !disabled && { opacity: 0.85 },
       ]}
@@ -36,6 +36,8 @@ export function ChoiceOption({ index, text, state, onPress, disabled, tone = 'li
       {state === 'correct' && (
         <View style={styles.tag}>
           <Ionicons name="checkmark" size={20} color={colors.mintInk} />
+          {/* Tone dark giữ nguyên giao diện cũ (chỉ icon). */}
+          {tone === 'light' && <Text style={[styles.tagText, { color: colors.mintInk }]}>Đúng</Text>}
         </View>
       )}
       {state === 'wrong' && (
@@ -71,6 +73,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56,
     paddingVertical: 10, paddingHorizontal: space.md, borderRadius: radius.md, borderWidth: 1.5,
   },
+  // Ô sáng (câu đố) cao 64 cho ngón tay trẻ; tone dark giữ 50 như cũ.
+  rowLight: { minHeight: 64, paddingVertical: 12 },
   rowDark: { minHeight: 50, borderRadius: 14, borderWidth: 0 },
   badge: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   letter: { fontFamily: font.black, fontSize: 14 },

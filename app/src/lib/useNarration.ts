@@ -1,5 +1,6 @@
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import * as Speech from 'expo-speech';
+import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AssetStatus } from './api';
 
@@ -23,11 +24,13 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
   const mode: NarrationMode = url ? 'remote' : status === 'error' ? 'device' : 'loading';
   const player = useAudioPlayer(null);
   const st = useAudioPlayerStatus(player);
+  const focused = useIsFocused();
 
   // Ý định nghe của người dùng: chỉ phát khi đã chủ động bấm.
   const [intent, setIntent] = useState(autoplay);
   const intentRef = useRef(autoplay);
   const loaded = useRef<string | null>(null);
+  const loadedKey = useRef<string | number | null>(null);
   const token = useRef(0);
   const mutedRef = useRef(muted);
 
@@ -63,18 +66,27 @@ export function useNarration({ url, status, chunks, key, autoplay, muted }: {
   // Đổi cảnh hoặc audio vừa sẵn sàng.
   useEffect(() => {
     stopDevice();
+    if (!focused) {
+      try { player.pause(); } catch {}
+      return;
+    }
     if (mode !== 'remote' || !url) {
       try { player.pause(); } catch {}
       loaded.current = null;
+      loadedKey.current = null;
       if (mode === 'device' && intentRef.current && chunks.length) speakFrom(0);
       return;
     }
-    if (loaded.current === url) return;
+    if (loaded.current === url && loadedKey.current === key) {
+      if (intentRef.current && !st.didJustFinish) player.play();
+      return;
+    }
     try { player.pause(); } catch {}
     player.replace({ uri: url });
     loaded.current = url;
+    loadedKey.current = key;
     if (intentRef.current) player.play();
-  }, [mode, url, key]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [mode, url, key, focused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* eslint-disable react-hooks/immutability -- AudioPlayer là native object; gán `muted` là API chính thức của expo-audio */
   useEffect(() => {

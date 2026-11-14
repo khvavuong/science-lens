@@ -55,8 +55,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false
+          "microphonePermission": "LumosLab cần micro khi em chọn ghi âm lời giải thích cho thử thách.",
+          "recordAudioAndroid": true
         }
       ],
       "expo-image",

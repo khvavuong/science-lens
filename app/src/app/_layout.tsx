@@ -6,12 +6,16 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AppNavigation } from '@/components/AppNavigation';
 import { StartupScreen } from '@/components/StartupScreen';
+import { hasSeenOnboarding, OnboardingSeenContext } from '@/lib/onboarding';
 import { colors } from '@/theme';
 
 export default function RootLayout() {
   const [introDone, setIntroDone] = useState(false);
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean>();
   const finishIntro = useCallback(() => setIntroDone(true), []);
+  const finishOnboarding = useCallback(() => setOnboardingSeen(true), []);
   const [loaded, error] = useFonts({
     BeVietnamPro_400Regular, BeVietnamPro_500Medium, BeVietnamPro_600SemiBold, BeVietnamPro_700Bold, BeVietnamPro_800ExtraBold,
   });
@@ -21,24 +25,45 @@ export default function RootLayout() {
     setAudioModeAsync({ playsInSilentMode: true }).catch(() => {});
   }, []);
 
-  if (!introDone || (!loaded && !error)) {
+  useEffect(() => {
+    let active = true;
+    void hasSeenOnboarding().then((seen) => { if (active) setOnboardingSeen(seen); });
+    return () => { active = false; };
+  }, []);
+
+  if (!introDone || onboardingSeen === undefined || (!loaded && !error)) {
     return <StartupScreen onIntroEnd={finishIntro} />;
   }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg }, animation: 'fade' }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="scan" options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="prelude" />
-        <Stack.Screen name="story" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="quiz" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="complete" options={{ gestureEnabled: false }} />
-        <Stack.Screen name="library" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="badges" options={{ animation: 'slide_from_right' }} />
-        <Stack.Screen name="coming-soon" options={{ animation: 'slide_from_right' }} />
-      </Stack>
-    </SafeAreaProvider>
+    <OnboardingSeenContext.Provider value={{ seen: onboardingSeen, finishOnboarding }}>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <AppNavigation enabled={onboardingSeen}>
+          {(swipeBack) => (
+            <Stack screenOptions={({ route }) => ({
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.bg },
+              gestureEnabled: false,
+              // Cử chỉ đã chạy chuyển động quay lại ở ngoài Stack.
+              animation: swipeBack ? 'none' : route.name === 'scan' ? 'slide_from_bottom'
+                : rightSlideScreens.has(route.name) ? 'slide_from_right' : 'fade',
+            })}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="scan" />
+              <Stack.Screen name="prelude" />
+              <Stack.Screen name="story" />
+              <Stack.Screen name="quiz" />
+              <Stack.Screen name="complete" />
+              <Stack.Screen name="library" />
+              <Stack.Screen name="badges" />
+              <Stack.Screen name="coming-soon" />
+            </Stack>
+          )}
+        </AppNavigation>
+      </SafeAreaProvider>
+    </OnboardingSeenContext.Provider>
   );
 }
+
+const rightSlideScreens = new Set(['quiz', 'library', 'badges', 'coming-soon']);

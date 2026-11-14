@@ -3,13 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
-import { createRequire } from 'node:module';
-import { accessSync, constants } from 'node:fs';
-// Đường dẫn tĩnh để Vercel đóng gói binary Linux cùng function.
-const cloudBinary = new URL('../node_modules/ffmpeg-static/ffmpeg', import.meta.url);
-if (process.env.VERCEL) accessSync(cloudBinary, constants.X_OK);
-const ffmpeg: string | null = process.env.VERCEL ? fileURLToPath(cloudBinary) : createRequire(import.meta.url)('ffmpeg-static');
 import sharp from 'sharp';
+import { ffmpeg } from './ffmpeg.js';
 
 export async function renderRecap(photo: Buffer, clip: Buffer, label: string, fact: string, score: number, total: number, narration: { data: Buffer; durationMs: number }) {
   const dir = await mkdtemp(join(tmpdir(), 'lumos-recap-'));

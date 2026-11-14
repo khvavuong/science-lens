@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Animated, Easing, PanResponder, Platform, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
-import { LumoGreeting, SpinningTopScan } from '@/components/OnboardingScenes';
+import { ChallengeScan, LumoGreeting } from '@/components/OnboardingScenes';
 import { Wordmark } from '@/components/Wordmark';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, motion, radius, space, touch, type } from '@/theme';
@@ -23,7 +23,7 @@ const steps = [
   },
   {
     title: 'Đến lượt bạn!',
-    body: 'Vì sao con quay không đổ ngay khi xoay? Thử quét một đồ vật để khám phá nhé!',
+    body: 'Một đồ vật giấu bí mật gì? Quét một món đồ quanh bạn để tìm ra nhé!',
   },
 ];
 
@@ -98,7 +98,7 @@ export function WelcomeScreen({ onStart, onSkip, busy }: {
                   </View>
                 ) : (
                   <>
-                    {page === 2 ? <SpinningTopScan size={scanSize} active={page === index} /> : (
+                    {page === 2 ? <ChallengeScan size={scanSize} active={page === index} /> : (
                       <View style={[styles.art, { width: artSize, height: artSize }]}>
                         <Image source={apple} style={styles.illustration} contentFit="cover" accessible={false} />
                         <View style={styles.camera}>

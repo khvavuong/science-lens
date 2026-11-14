@@ -1,10 +1,12 @@
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { spawn } from 'node:child_process';
 import sharp from 'sharp';
 import { config } from './config.js';
+import { ffmpeg } from './ffmpeg.js';
 import {
   IMAGE_NEGATIVE, IMAGE_STYLE_BASE, PLAN_SCHEMA, plannerSystem,
   RECOGNIZE_PROMPT, RECOGNIZE_SCHEMA, VIDEO_STYLE,
+  HUNT_EVALUATION_PROMPT, HUNT_SCHEMA, HUNT_TRANSCRIPTION_PROMPT, HUNT_TRANSCRIPTION_SCHEMA, HUNT_VERDICTS,
 } from './prompts.js';
 import type { Plan, Recognition } from './types.js';
 
@@ -37,9 +39,10 @@ export function modelStatus() {
 async function withModels<T>(
   models: string[], label: string, timeoutMs: number,
   fn: (model: string, signal: AbortSignal) => Promise<T>,
+  budgetMs = 200_000,
 ): Promise<T> {
   let last: unknown;
-  const deadline = Date.now() + 200_000;
+  const deadline = Date.now() + budgetMs;
   for (const model of models) {
     if ((cooldownUntil.get(model) ?? 0) > Date.now()) {
       last ??= new QuotaError(`${model}: đang hết quota`);
@@ -145,7 +148,9 @@ function parseJson<T>(text: string | undefined): T {
 }
 
 function thinkingFor(model: string, level: 'low' | 'medium') {
-  return model.startsWith('gemini-2.5') ? { thinkingBudget: level === 'low' ? 0 : 1024 } : { thinkingLevel: level };
+  return model.startsWith('gemini-2.5')
+    ? { thinkingBudget: level === 'low' ? 0 : 1024 }
+    : { thinkingLevel: level === 'low' ? ThinkingLevel.LOW : ThinkingLevel.MEDIUM };
 }
 
 export async function recognize(imageBase64: string, mimeType = 'image/jpeg'): Promise<Recognition> {
@@ -159,6 +164,67 @@ export async function recognize(imageBase64: string, mimeType = 'image/jpeg'): P
     out.label = out.label.trim().toLowerCase();
     out.alternatives = (out.alternatives ?? []).filter((a) => a && a.toLowerCase() !== out.label).slice(0, 3);
     return out;
+  });
+}
+
+export type HuntEvaluation = {
+  verdict: (typeof HUNT_VERDICTS)[number];
+  feedback: string;
+  objectLabel?: string;
+};
+
+export type HuntEvaluationInput = {
+  photo: Buffer;
+  mission: { title: string; task: string; criteria: string };
+  explanation: string;
+  acceptedObjects: { objectLabel: string; explanation: string }[];
+};
+
+export async function evaluateHunt(input: HuntEvaluationInput): Promise<HuntEvaluation> {
+  return withModels(config.models.vision, 'hunt-evaluate', 15_000, async (model, abortSignal) => {
+    const result = await ai.models.generateContent({
+      model,
+      contents: [{ role: 'user', parts: [
+        { inlineData: { data: input.photo.toString('base64'), mimeType: 'image/jpeg' } },
+        { text: JSON.stringify({ explanation: input.explanation, acceptedObjects: input.acceptedObjects }) },
+      ] }],
+      config: {
+        abortSignal,
+        systemInstruction: `${HUNT_EVALUATION_PROMPT}\nTrusted mission: ${JSON.stringify({
+          title: input.mission.title, task: input.mission.task, criteria: input.mission.criteria,
+        })}`,
+        responseMimeType: 'application/json',
+        responseJsonSchema: HUNT_SCHEMA,
+        thinkingConfig: thinkingFor(model, 'low'),
+      },
+    });
+    return parseJson<HuntEvaluation>(result.text);
+  }, 32_000);
+}
+
+export async function transcribeHunt(pcm: Buffer): Promise<string> {
+  // mp3 32 kbps nhỏ hơn WAV khoảng 8 lần: Gemini trả lời nhanh gấp đôi mà chép lời vẫn chính xác.
+  // Nén lỗi thì vẫn gửi WAV.
+  const audio = await pcmToMp3(pcm, 16_000, { binary: ffmpeg ?? 'ffmpeg', bitrate: '32k' })
+    .then((data) => ({ data, mimeType: 'audio/mp3' }))
+    .catch(() => ({ data: wavFromPcm(pcm, 16_000), mimeType: 'audio/wav' }));
+  const inlineData = { data: audio.data.toString('base64'), mimeType: audio.mimeType };
+  // Trẻ đang chờ: model đầu chưa xong sau 4 giây thì gọi thêm model kế tiếp, lấy kết quả về trước.
+  return hedged(config.models.transcribe, 'hunt-transcribe', 4_000, 15_000, async (model, abortSignal) => {
+    const result = await ai.models.generateContent({
+      model,
+      contents: [{ role: 'user', parts: [{ inlineData }] }],
+      config: {
+        abortSignal,
+        systemInstruction: HUNT_TRANSCRIPTION_PROMPT,
+        responseMimeType: 'application/json',
+        responseJsonSchema: HUNT_TRANSCRIPTION_SCHEMA,
+        thinkingConfig: thinkingFor(model, 'low'),
+      },
+    });
+    const data = parseJson<{ transcript: unknown }>(result.text);
+    if (typeof data.transcript !== 'string') throw new Error('Bản chép lời không hợp lệ');
+    return data.transcript.trim();
   });
 }
 
@@ -352,9 +418,9 @@ function wavFromPcm(pcm: Buffer, rate: number): Buffer {
   return Buffer.concat([h, pcm]);
 }
 
-function pcmToMp3(pcm: Buffer, rate: number): Promise<Buffer> {
+function pcmToMp3(pcm: Buffer, rate: number, { binary = 'ffmpeg', bitrate = '64k' } = {}): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    const p = spawn('ffmpeg', ['-loglevel', 'error', '-f', 's16le', '-ar', String(rate), '-ac', '1', '-i', 'pipe:0', '-b:a', '64k', '-f', 'mp3', 'pipe:1']);
+    const p = spawn(binary, ['-loglevel', 'error', '-f', 's16le', '-ar', String(rate), '-ac', '1', '-i', 'pipe:0', '-b:a', bitrate, '-f', 'mp3', 'pipe:1'], { windowsHide: true });
     const chunks: Buffer[] = [];
     p.stdout.on('data', (c) => chunks.push(c));
     p.stdin.on('error', reject);

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Platform, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconButton } from '@/components/Button';
 import { ChoiceOption, type ChoiceState } from '@/components/ChoiceOption';
@@ -12,7 +12,12 @@ import { useJourney } from '@/lib/store';
 import { useReducedMotion } from '@/lib/useReducedMotion';
 import { colors, font, motion, radius, space, type } from '@/theme';
 
+const letterOf = (i: number) => String.fromCharCode(65 + i);
+
+/** Câu đố sau truyện: một câu mỗi màn, chọn → "Kiểm tra" → sheet phản hồi ở đáy (kiểu Duolingo). */
 export default function Quiz() {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const focused = useIsFocused();
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
   const { story, quizAnswers, answer } = useJourney();
@@ -22,8 +27,9 @@ export default function Quiz() {
   const [selected, setSelected] = useState<number | null>(null);
   const [enter] = useState(() => new Animated.Value(1));
   const [sheet] = useState(() => new Animated.Value(0));
+  const scroll = useRef<ScrollViewInstance>(null);
 
-  useEffect(() => { if (!quiz.length) router.replace('/'); }, [quiz.length]);
+  useEffect(() => { if (focused && !quiz.length) router.dismissTo('/'); }, [focused, quiz.length]);
   useEffect(() => {
     enter.setValue(0);
     Animated.timing(enter, { toValue: 1, duration: reduced ? 120 : motion.sheet, useNativeDriver: true }).start();
@@ -42,6 +48,7 @@ export default function Quiz() {
 
   const isCorrect = checked && committed === item.answer_index;
   const scene = story?.plan?.scenes.find((s) => s.id === item.scene_ref);
+  const answerText = `${letterOf(item.answer_index)}. ${item.options[item.answer_index]}`;
 
   const stateOf = (i: number): ChoiceState => {
     if (!checked) return selected === i ? 'selected' : 'idle';
@@ -50,34 +57,56 @@ export default function Quiz() {
     return 'dim';
   };
 
-  const trail: NodeState[] = quiz.map((_, i) => (i < q || (i === q && checked) ? 'done' : i === q ? 'current' : 'todo'));
+  // Câu đã trả lời: đúng = 'done' (tích xanh), sai = 'missed' (chấm trung tính), không bao giờ hiện tích cho câu sai.
+  const trail: NodeState[] = quiz.map((it, i) => {
+    const a = quizAnswers[i];
+    if (a !== null && a !== undefined) return a === it.answer_index ? 'done' : 'missed';
+    return i === q ? 'current' : 'todo';
+  });
+  const nodeWord: Record<NodeState, string> = {
+    done: 'đúng', missed: 'chưa đúng', current: 'đang làm', todo: 'chưa làm',
+    locked: 'chưa mở', loading: 'đang tải', skipped: 'bỏ qua',
+  };
+  const trailLabel = `Câu đố, câu ${q + 1} trên ${quiz.length}. ${trail.map((s, i) => `Câu ${i + 1}: ${nodeWord[s]}`).join(', ')}`;
 
   const check = () => {
     if (selected === null) return;
     answer(q, selected);
-    if (selected === item.answer_index) haptic.success();
+    const right = selected === item.answer_index;
+    if (right) haptic.success();
     else haptic.error();
+    // Android đọc qua accessibilityLiveRegion của sheet; iOS cần thông báo chủ động.
+    if (Platform.OS === 'ios') {
+      AccessibilityInfo.announceForAccessibility(right ? 'Chính xác!' : `Chưa đúng. Đáp án đúng là ${answerText}`);
+    }
   };
 
   const goQ = (n: number) => { setSelected(null); setQ(n); };
   const next = () => {
     if (q < quiz.length - 1) goQ(q + 1);
-    else router.replace('/complete');
+    else router.replace({ pathname: '/complete', params: { from } });
   };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top + space.sm }]}>
       <View style={styles.header}>
         <IconButton icon="chevron-back" label={q > 0 ? 'Câu trước' : 'Quay lại câu chuyện'} onPress={() => (q > 0 ? goQ(q - 1) : router.back())} />
-        <View style={{ flex: 1 }} accessibilityLabel={`Câu ${q + 1} trên ${quiz.length}`}>
+        <View style={{ flex: 1 }} accessible accessibilityLabel={trailLabel}>
           <HorizontalTrail states={trail} size={26} numbered />
         </View>
       </View>
 
       <Animated.View style={{ flex: 1, opacity: enter, transform: [{ translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] }}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <Text style={[type.h1, { marginBottom: space.lg }]} accessibilityRole="header">{item.question}</Text>
-          <View style={{ gap: 10 }} accessibilityRole="radiogroup">
+        {/* Câu hỏi ở trên, đáp án dồn xuống vùng ngón cái. Khi sheet phản hồi mở, khoảng trống co lại;
+            màn nhỏ thì cuộn tới cuối để vẫn thấy các đáp án đã tô màu. */}
+        <ScrollView
+          key={q}
+          ref={scroll}
+          contentContainerStyle={styles.scroll}
+          onLayout={() => { if (checked) scroll.current?.scrollToEnd({ animated: !reduced }); }}
+        >
+          <Text style={type.h1} accessibilityRole="header">{item.question}</Text>
+          <View style={styles.options} accessibilityRole="radiogroup">
             {item.options.map((o, i) => (
               <ChoiceOption key={i} index={i} text={o} state={stateOf(i)} disabled={checked} onPress={() => setSelected(i)} />
             ))}
@@ -91,17 +120,26 @@ export default function Quiz() {
             { transform: [{ translateY: sheet.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }], opacity: sheet }]}
           accessibilityLiveRegion="assertive"
         >
-          <View style={styles.fbHead}>
-            <View style={[styles.fbIcon, !isCorrect && { backgroundColor: colors.surface }]}>
-              <Ionicons name={isCorrect ? 'star' : 'bulb'} size={18} color={colors.navy} />
-            </View>
-            <Text style={styles.fbTitle}>{isCorrect ? 'Chính xác!' : 'Chưa đúng, không sao!'}</Text>
+          {/* Khi sai, đáp án đúng đã tô xanh kèm chữ "Đúng" trong danh sách nên không lặp lại trên sheet;
+              trình đọc màn hình vẫn nghe đáp án đúng qua accessibilityLabel của tiêu đề. */}
+          <View
+            style={styles.fbHead}
+            accessible
+            accessibilityRole="header"
+            accessibilityLabel={isCorrect ? 'Chính xác!' : `Chưa đúng, không sao! Đáp án đúng là ${answerText}`}
+          >
+            <Ionicons name={isCorrect ? 'checkmark-circle' : 'close-circle'} size={28} color={isCorrect ? colors.mintInk : colors.danger} />
+            <Text style={[styles.fbTitle, { color: isCorrect ? colors.mintInk : colors.danger }]}>
+              {isCorrect ? 'Chính xác!' : 'Chưa đúng, không sao!'}
+            </Text>
           </View>
-          {!isCorrect && (
-            <Text style={type.bodyStrong}>Đáp án đúng: {String.fromCharCode(65 + item.answer_index)}. {item.options[item.answer_index]}</Text>
-          )}
           <Text style={type.body}>{stripPraise(item.explanation)}</Text>
-          {scene && <Text style={[styles.sceneRef, !isCorrect && { color: colors.brand }]}>Xem lại: {scene.title}</Text>}
+          {scene && (
+            <View style={styles.sceneRef}>
+              <Ionicons name="book-outline" size={14} color={colors.muted} />
+              <Text style={[type.caption, { flex: 1 }]}>Trong cảnh: {scene.title}</Text>
+            </View>
+          )}
           <Button label={q < quiz.length - 1 ? 'Câu tiếp theo' : 'Xem kết quả'} chevron onPress={next} style={{ marginTop: space.sm }} />
         </Animated.View>
       ) : (
@@ -116,13 +154,13 @@ export default function Quiz() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.md, paddingRight: space.lg },
-  scroll: { paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.xl },
-  feedback: { paddingHorizontal: space.lg, paddingTop: 20, gap: 8, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
+  scroll: { flexGrow: 1, justifyContent: 'space-between', gap: space.lg, paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.md },
+  options: { gap: 12 },
+  feedback: { paddingHorizontal: space.lg, paddingTop: 20, gap: 10, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl },
   fbOk: { backgroundColor: colors.mintSoft },
-  fbNo: { backgroundColor: colors.bgAlt },
-  fbHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  fbIcon: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.lumen, alignItems: 'center', justifyContent: 'center' },
-  fbTitle: { fontFamily: font.black, fontSize: 20, color: colors.navy },
-  sceneRef: { fontFamily: font.semibold, fontSize: 14, color: colors.mintInk },
+  fbNo: { backgroundColor: colors.dangerSoft },
+  fbHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  fbTitle: { flex: 1, fontFamily: font.black, fontSize: 20, lineHeight: 26 },
+  sceneRef: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   cta: { paddingHorizontal: space.lg, paddingTop: space.sm },
 });

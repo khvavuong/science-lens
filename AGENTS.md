@@ -59,6 +59,8 @@ App tìm backend theo IP của máy chạy `expo start` (`Constants.expoConfig.h
 | GET | `/api/stories/:id` | trạng thái plan + từng asset (`pending/ready/error`). App poll mỗi 1.5s |
 | POST | `/api/stories/:id/retry` | tạo lại asset lỗi (vd. sau khi bật billing ảnh) |
 | GET | `/api/health` | model đang dùng + model đang cooldown |
+| POST | `/api/hunt/transcribe` | Multipart với tệp ghi âm tối đa 30 giây, trả bản chép lời tiếng Việt |
+| POST | `/api/hunt/evaluate` | Multipart với ảnh, chủ đề và lời giải thích, trả nhận xét cho từng vật |
 
 Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` và `app/src/lib/api.ts`. Đổi schema → sửa cả hai + `PLAN_SCHEMA` trong `prompts.ts` + `prompts/story-planner.md`.
 
@@ -76,6 +78,7 @@ Types của Story/Plan/Scene/Quiz khai báo **hai nơi**: `server/src/types.ts` 
 - Key free tier: nhận diện, planner, TTS chạy được; **ảnh và video đều `limit: 0`** → cần bật billing. Thiếu ảnh thì video của cảnh đó bị bỏ qua (`error: 'skipped'`).
 - Prompt planner phải giữ: dấu câu đầy đủ (thiếu thì model bỏ hết dấu phẩy/hỏi), năm viết bằng chữ số, 40–60 từ/cảnh.
 - Test thủ công bằng `curl` lên server **tốn quota thật**; lặp lại cùng label để dùng cache.
+- **Chép lời ghi âm** (`transcribeHunt`): gửi mp3 32 kbps, không gửi WAV (WAV chậm gấp đôi, chép lời không chính xác hơn). Dùng `hedged()` với `MODEL_TRANSCRIBE` (flash-lite trước). Đo 11/2026: khoảng 2,5–3 giây cho bản ghi 19 giây.
 
 ## Quy tắc nội dung (an toàn trẻ em và độ chính xác)
 
@@ -117,6 +120,7 @@ Thiết kế tham chiếu: [DESIGN.md](DESIGN.md) và mockup xanh dương, kem v
 - Route chỉ nằm trong `app/src/app/`; code khác để ngoài. Import bằng alias `@/`.
 - **React Compiler lint đang bật:** không đọc `ref.current` trong render, không `setState` đồng bộ trong effect, tránh `useMemo`/`useCallback` thủ công lệch dependency. Giá trị Animated/PanResponder tạo bằng `useState(() => …)`. Riêng gán `player.muted` có eslint-disable kèm lý do, giữ nguyên.
 - RN 0.88: **`StyleSheet.absoluteFillObject` đã bị xóa**, dùng `StyleSheet.absoluteFill`.
+- SDK 58: `fetch` toàn cục trên native là `expo/fetch`, **không nhận phần FormData kiểu `{ uri, name, type }`** (ném lỗi trước khi gửi). Gửi tệp bằng đối tượng có `bytes()` (xem `lib/huntUpload.ts`).
 - RN style: `paddingTop` cụ thể ở style gốc **thắng** `padding` viết tắt ở style ghi đè. Ghi đè thì ghi rõ từng cạnh.
 - Gesture dùng FlatList `pagingEnabled` + `PanResponder` có sẵn, **không** dùng react-native-gesture-handler (v3 đổi hẳn API) hay @gorhom/bottom-sheet. Giữ app chạy được trên Expo Go: chỉ dùng module có trong Expo Go.
 - Comment và chuỗi UI viết tiếng Việt; tên biến tiếng Anh.
@@ -139,7 +143,7 @@ Checklist nghiệm thu (spec mục 09): chạy trên máy thật Android/iOS t�
 ## Còn thiếu so với spec
 
 - Hình minh họa 3D trong mockup (hero trang chủ, huy hiệu): đang dùng SVG tạm trong `Illustrations.tsx`, chờ file PNG gốc.
-- Nút "Thử thách" và "Lộ trình" trên thanh điều hướng Trang chủ mở màn "Sắp ra mắt".
+- Nút "Bản đồ" trên thanh điều hướng mở màn "Sắp ra mắt".
 
 - P1 parallax con quay hồi chuyển: chưa làm. Nút tắt haptic: chưa có.
 - Xem truyện offline trên thiết bị: chưa có (cache mới chỉ ở server).
