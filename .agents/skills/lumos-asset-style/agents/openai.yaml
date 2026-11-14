@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lumo Pet Asset Style"
+  short_description: "Consistent 2D art for Lumo Pet and its wearables"
+  default_prompt: "Use $lumos-asset-style to create or review Lumo Pet artwork and its wearable accessories using the pet identity and style references."

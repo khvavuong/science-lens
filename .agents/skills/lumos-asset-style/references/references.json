@@ -1,0 +1,34 @@
+[
+  {
+    "source": "ChatGPT Image Oct 28, 2026, 11_13_08 AM.png",
+    "sha256": "1AEF2B1A8E1336F0E985FD84E84B3F6474D4AD44C4BA94D271281A4D205280DE",
+    "file": "style-master.png",
+    "role": "original style context; current approved baseline has priority"
+  },
+  {
+    "source": "user robot master",
+    "sha256": "CAAD388D258C0A179119E5BB8911231A7129BDF6A30289DABCEA8C61EC0071FA",
+    "file": "robot-identity-master.png",
+    "role": "approved identity authority; not permission for glossy rendering"
+  },
+  {
+    "file": "approved-map-baseline-v1.png",
+    "role": "previous approved map baseline; superseded by v5 explicitly approved on2026-10-28",
+    "source": "codex-clipboard-5bb45095-f615-4674-bb08-54c749769d95.png",
+    "approvedAt": "2026-10-28",
+    "approvalScope": "map artwork and shared rendering baseline; robot and cap pilot images pending",
+    "sha256": "AE07D6495E5FAA3B0F2965B04F7AD0B671AD7BFB57891975E6C00675859DB416",
+    "width": 755,
+    "height": 2084
+  },
+  {
+    "file": "approved-map-baseline.png",
+    "role": "current user-approved Lumos visual baseline; use for all future asset style matching",
+    "source": "meadow-reference-clean-v5.png",
+    "approvedAt": "2026-10-28",
+    "approvalScope": "map artwork and shared style baseline; robot/item pilots and product UI remain pending",
+    "sha256": "BCBE5149CC2DD23B65E1AFABB001A4E840767254C1D2B026F995554A230E74F8",
+    "width": 756,
+    "height": 2079
+  }
+]
