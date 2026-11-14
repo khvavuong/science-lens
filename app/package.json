@@ -52,5 +52,16 @@
     "typecheck": "tsc --noEmit",
     "lint": "expo lint"
   },
-  "private": true
+  "private": true,
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "@react-native-masked-view/masked-view",
+          "expo-modules-core",
+          "expo-image-loader"
+        ]
+      }
+    }
+  }
 }
