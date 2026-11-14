@@ -24,6 +24,15 @@ export const config = {
     // "Saigon Lily": nữ, giọng miền Nam, nhẹ nhàng.
     voiceId: process.env.ELEVENLABS_VOICE_ID ?? 'WFDoCi084FlAxSbpBEfC',
     models: (process.env.ELEVENLABS_MODEL ?? 'eleven_v4,eleven_turbo_v2_5').split(','),
+    // Kể chuyện vui nhộn: stability thấp + style cao = lên xuống giọng nhiều hơn; speed hơi nhanh cho có nhịp.
+    // Đẩy stability < 0.3 dễ đọc lệch/vấp chữ tiếng Việt.
+    voiceSettings: {
+      stability: Number(process.env.ELEVENLABS_STABILITY ?? 0.35),
+      similarity_boost: 0.8,
+      style: Number(process.env.ELEVENLABS_STYLE ?? 0.45),
+      use_speaker_boost: true,
+      speed: Number(process.env.ELEVENLABS_SPEED ?? 1.05),
+    },
   },
   // Video (Gemini Omni Flash, không có free tier ~ $0.07/giây ở 720p).
   video: {

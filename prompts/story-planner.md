@@ -23,7 +23,7 @@ CHOOSING THE TOPIC
 
 LANGUAGE (Vietnamese only)
 - Short sentences, at most about 20 words each. Simple words; explain any term as soon as it is used.
-- Warm, curious, encouraging tone; address the listener as "bạn".
+- Address the listener as "bạn"; warm and encouraging.
 - Narration per scene: 40–60 words (about 15–22 seconds read aloud).
   prelude_narration: 25–40 words, ending with an invitation to guess the mystery question.
 - Write for reading aloud: no abbreviations, no emoji, no markdown, no brackets.
@@ -35,6 +35,19 @@ LANGUAGE (Vietnamese only)
 - Vietnamese capitalization: title, teaser, scene titles and concept.name capitalize only the
   first letter and proper nouns ("Hành trình đổi màu của quả chuối", not "Hành Trình Đổi Màu Của Quả Chuối").
 - Scene title at most 6 words; teaser one sentence, at most 18 words.
+
+FUN, PLAYFUL VOICE (like a cheerful science YouTuber talking to a friend)
+- Funny and lively, never textbook. The fact is the hero; humor is the sauce.
+- Every scene opens with a hook (surprising question, playful "plot twist", funny observation); vary hooks.
+- About one humor tool per scene: personify the object, a funny everyday comparison
+  (đi học, giờ ra chơi, trà sữa, chơi game), onomatopoeia that sounds good aloud (bùm, xèo xèo, vèo).
+- HARD LIMIT 40–60 words per scene: jokes replace words, never add length.
+- Friendly framing (friends, teammates, helpers, team mission), not enemies, battles or soldiers.
+- Kid-friendly trending expressions ("xịn xò", "đỉnh của chóp", "hết nước chấm", "nhỏ mà có võ",
+  "ủa alo", "plot twist"…): only 2–3 in the WHOLE story incl. prelude, never two in one scene.
+- Never adult slang, swearing, insults, body shaming, romance, or memes tied to real people/brands.
+- key_fact, concept, quiz and explanation stay plain and studyable; jokes live in the narration.
+  (Tested 11/2026: without the hard limit and "sparingly" wording the model went to 61–65 words and 5 trending phrases.)
 
 ACCURACY
 - Each scene carries exactly ONE main idea (key_fact) that is scientifically correct.
@@ -81,11 +94,13 @@ VIDEO (written in English)
   an ongoing process (sprouting, melting, evaporating, changing color), physical motion, a reaction.
   Scenes that only introduce a character or a static setting → false.
 - motion_prompt for every scene: 1–2 sentences describing motion that starts from the image_prompt frame
-  (how the subject moves, camera: static / slow push-in / gentle pan). Slow, smooth, no cuts, no new characters.
+  Playful cartoon motion: the object bounces, wiggles, squash-and-stretch, while the phenomenon
+  visibly happens; one small charming detail (sparkles, floating particles). Camera: static / slow push-in /
+  gentle pan. Smooth, no cuts, no new characters or people.
 ```
 
 `{{VIDEO_MAX}}` is filled from `VIDEO_MAX_SCENES` (0 when `VIDEO_ENABLED=0`). At generation time
-`VIDEO_STYLE` (no dialogue, no text, same art style) is appended to `motion_prompt`.
+`VIDEO_STYLE` (same art style, cheerful bouncy motion, no flashing/strobing, no dialogue, no text) is appended to `motion_prompt`.
 
 ## JSON schema (summary)
 
