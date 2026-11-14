@@ -27,7 +27,9 @@ export function createVoiceDetector(opts: VoiceDetectorOptions = {}) {
   let belowSince: number | undefined;
 
   return {
-    push(db: number, atMs: number): VadEvent {
+    push(rawDb: number, atMs: number): VadEvent {
+      // Mẫu hỏng (NaN, ±Infinity) coi như im lặng để không làm hỏng hiệu chuẩn.
+      const db = Number.isFinite(rawDb) ? rawDb : -160;
       if (done) return 'none';
       if (atMs >= maxMs) {
         done = true;
@@ -82,10 +84,11 @@ export function levelFromDb(db: number | undefined): number {
 
 /** RMS của khung mẫu, nhân 3 rồi kẹp 0…1. */
 export function rmsLevel(frames: number[]): number {
-  if (frames.length === 0) return 0;
+  const valid = frames.filter((f) => Number.isFinite(f));
+  if (valid.length === 0) return 0;
   let sq = 0;
-  for (const f of frames) sq += f * f;
-  return Math.min(1, Math.max(0, Math.sqrt(sq / frames.length) * 3));
+  for (const f of valid) sq += f * f;
+  return Math.min(1, Math.max(0, Math.sqrt(sq / valid.length) * 3));
 }
 
 /** Thay mọi `{object}` trong mẫu câu hỏi bằng tên đồ vật. */
@@ -98,6 +101,6 @@ export type LockDecision = 'lock' | 'person' | 'unsafe' | 'unsure';
 export function lockDecision(r: { has_person: boolean; safe: boolean; confidence: number }): LockDecision {
   if (r.has_person) return 'person';
   if (!r.safe) return 'unsafe';
-  if (r.confidence < 0.6) return 'unsure';
+  if (!(r.confidence >= 0.6)) return 'unsure';
   return 'lock';
 }

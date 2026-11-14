@@ -73,3 +73,28 @@ test('lockDecision', () => {
   assert.equal(lockDecision({ has_person: false, safe: true, confidence: 0.59 }), 'unsure');
   assert.equal(lockDecision({ has_person: false, safe: true, confidence: 0.6 }), 'lock');
 });
+
+test('mẫu dB hỏng không làm hỏng hiệu chuẩn', () => {
+  const d = createVoiceDetector();
+  const evs = [];
+  for (let t = 0; t < 1500; t += 100) {
+    const db = t === 100 ? NaN : t < 300 ? -55 : -30;
+    const e = d.push(db, t);
+    if (e !== 'none') evs.push(e);
+  }
+  assert.deepEqual(evs, ['speech']);
+});
+
+test('rmsLevel bỏ qua khung không hữu hạn', () => {
+  assert.ok(Number.isFinite(rmsLevel([NaN, 0.5])));
+  assert.ok(Number.isFinite(rmsLevel([NaN])));
+});
+
+test('lockDecision với confidence NaN là unsure', () => {
+  assert.equal(lockDecision({ has_person: false, safe: true, confidence: NaN }), 'unsure');
+});
+
+test('im 1100 ms sau khi nói chưa end', () => {
+  const ev = run([[-55, 300], [-30, 1000], [-55, 1100]]);
+  assert.deepEqual(ev.map((e) => e[0]), ['speech']);
+});
