@@ -10,8 +10,8 @@ export const REVIEW_COUNTDOWN_MS = 2000;
 
 export const verdictLabels: Record<HuntVerdict, string> = {
   accepted: 'Đạt',
-  needs_detail: 'Bổ sung lời giải thích',
-  retake_photo: 'Chọn ảnh rõ hơn',
+  needs_detail: 'Kể thêm một chút',
+  retake_photo: 'Cần ảnh rõ hơn',
   change_object: 'Thử một vật khác',
 };
 
@@ -26,7 +26,7 @@ export type ScanChip = 'aim' | 'person' | 'unsafe' | 'paused';
 
 export const scanChipText: Record<ScanChip, string> = {
   aim: 'Đưa đồ vật vào khung',
-  person: 'Chỉ để đồ vật trong khung nhé',
+  person: 'Đặt vật xuống, chỉ để vật trong khung nhé',
   unsafe: 'Thử một vật khác nhé',
   paused: 'Chạm để quét tiếp',
 };

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { CameraView } from 'expo-camera';
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -56,8 +56,17 @@ export default function HuntMission() {
     const trail = Array.from({ length: topic.required }, (): NodeState => 'done');
     const toggle = (itemId: string) => setExpanded((open) => open.includes(itemId) ? open.filter((value) => value !== itemId) : [...open, itemId]);
     return (
-      <HuntFrame back="/hunt" title={topic.title}>
+      <HuntFrame back="/hunt" title={topic.title} footer={
+        <Button label="Chọn chủ đề khác" icon="grid-outline"
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/hunt')} />
+      }>
         <View style={styles.intro}>
+          <View style={styles.badge}>
+            <Ionicons name="star" size={40} color={colors.navy} />
+          </View>
+          <Text style={styles.cheer} accessibilityRole="header" maxFontSizeMultiplier={1.3}>
+            Em đã tìm đủ {topic.required} đồ vật!
+          </Text>
           <Text style={styles.task}>{topic.task}</Text>
           <View style={styles.progress} accessible accessibilityLiveRegion="polite" accessibilityLabel="Nhiệm vụ hoàn thành">
             <View style={styles.trail}><HorizontalTrail states={trail} size={20} /></View>
@@ -128,10 +137,12 @@ export default function HuntMission() {
           bar={bar}
           barLevel={barLevel}
           onStart={phase === 'ready' ? () => void live.begin() : undefined}
+          startLabel={count > 0 ? 'Tìm tiếp' : 'Bắt đầu tìm'}
           picker={live.cameraDenied && !locked ? { busy: live.picking, onPick: () => void live.pickPhoto() } : undefined}
           saving={savingError ? { message: savingError, busy: live.retrying, onRetry: () => void live.retrySave() } : undefined}
           composer={{
-            value: draft?.explanation ?? '',
+            // Đang quét vật mới: không hiện chữ của vật trước trong ô đang tắt.
+            value: locked ? draft?.explanation ?? '' : '',
             editable: locked && !busy,
             onFocus: live.takeOver,
             onChangeText: live.edit,
@@ -156,6 +167,11 @@ const styles = StyleSheet.create({
   bottom: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
   pressed: { opacity: 0.6 },
   intro: { alignItems: 'center', gap: space.sm },
+  badge: {
+    width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.lumen, marginTop: space.sm,
+  },
+  cheer: { ...type.h1, textAlign: 'center' },
   task: { ...type.body, textAlign: 'center' },
   progress: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 28 },
   trail: { width: 108 },

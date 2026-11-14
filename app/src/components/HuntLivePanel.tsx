@@ -7,6 +7,7 @@ import { Button } from '@/components/Button';
 import { LiveBar } from '@/components/VoiceBars';
 import type { HuntVerdict } from '@/lib/api';
 import { haptic } from '@/lib/haptics';
+import { useReducedMotion } from '@/lib/useReducedMotion';
 import { REVIEW_COUNTDOWN_MS, verdictIcons, verdictLabels, type LiveTone, type MicAction } from '@/lib/huntScreen';
 import { colors, font, space, type } from '@/theme';
 
@@ -23,6 +24,8 @@ type Props = {
   barLevel: number;
   /** Trước khi bắt đầu: chỉ có câu đề bài và nút chính. */
   onStart?: () => void;
+  /** Chữ nút chính; đã tìm được vật thì "Tìm tiếp". */
+  startLabel?: string;
   /** Camera bị từ chối và chưa có vật: chọn ảnh từ thư viện thay cho khung ngắm. */
   picker?: { busy: boolean; onPick: () => void };
   composer?: {
@@ -46,7 +49,7 @@ type Props = {
 };
 
 /** Dải đáy navy của Thử thách trực tiếp: phụ đề, dòng nhận xét, thanh sóng, ô nhập + nút tròn. */
-export function HuntLivePanel({ caption, verdict, bar, barLevel, onStart, picker, composer, saving }: Props) {
+export function HuntLivePanel({ caption, verdict, bar, barLevel, onStart, startLabel = 'Bắt đầu tìm', picker, composer, saving }: Props) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.panel, { paddingLeft: insets.left + space.md, paddingRight: insets.right + space.md, paddingBottom: insets.bottom + space.sm }]}>
@@ -69,7 +72,8 @@ export function HuntLivePanel({ caption, verdict, bar, barLevel, onStart, picker
           </View>
         )}
         {onStart ? (
-          <Button label="Bắt đầu tìm" icon="scan-outline" onPress={onStart} />
+          <Button label={startLabel} icon="scan-outline" onPress={onStart}
+            accessibilityHint="Lumo sẽ nói, rồi bật camera để tìm đồ vật cùng em" />
         ) : picker ? (
           <View style={styles.picker}>
             <Text style={styles.pickerText} maxFontSizeMultiplier={1.3}>Em có thể chọn ảnh từ thư viện</Text>
@@ -83,9 +87,13 @@ export function HuntLivePanel({ caption, verdict, bar, barLevel, onStart, picker
   );
 }
 
-/** LiveBar chỉ đẩy vạch mới khi mức đổi: khi đang nói/nghe thêm nhiễu nhỏ mỗi ~100 ms để sóng chạy đều. */
+/**
+ * LiveBar chỉ đẩy vạch mới khi mức đổi: khi đang nói/nghe thêm nhiễu nhỏ mỗi ~100 ms để sóng chạy đều.
+ * Reduce Motion: sóng đứng yên, chỉ còn icon và chữ cho biết ai đang nói.
+ */
 function LiveStatus({ tone, label, level }: { tone: LiveTone; label: string; level: number }) {
-  const moving = tone === 'lumo' || tone === 'me';
+  const reduced = useReducedMotion();
+  const moving = !reduced && (tone === 'lumo' || tone === 'me');
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!moving) return;
@@ -93,7 +101,7 @@ function LiveStatus({ tone, label, level }: { tone: LiveTone; label: string; lev
     return () => clearInterval(timer);
   }, [moving]);
   const jitter = moving ? (tick % 2) * 0.03 : 0;
-  return <LiveBar tone={tone} label={label} level={Math.min(1, Math.max(0, level) + jitter)} />;
+  return <LiveBar tone={tone} label={label} level={reduced ? 0 : Math.min(1, Math.max(0, level) + jitter)} />;
 }
 
 function Composer({
