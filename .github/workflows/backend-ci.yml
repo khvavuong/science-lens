@@ -50,4 +50,17 @@ jobs:
           fi
       - run: npm install --global vercel@53.2.0
       - name: Deploy existing production backend
-        run: vercel deploy --prod --yes --scope hungbils-projects --token "$VERCEL_TOKEN"
+        run: |
+          deployment_url=$(vercel deploy --prod --yes --no-wait --scope hungbils-projects --token "$VERCEL_TOKEN")
+          for attempt in {1..60}; do
+            state=$(vercel inspect "$deployment_url" --format=json --scope hungbils-projects --token "$VERCEL_TOKEN" | jq -er '.readyState')
+            echo "Deployment: $state ($deployment_url)"
+            case "$state" in
+              READY) exit 0 ;;
+              BLOCKED|ERROR|CANCELED) exit 1 ;;
+              QUEUED|INITIALIZING|BUILDING) sleep 10 ;;
+              *) echo "Unexpected deployment state: $state" >&2; exit 1 ;;
+            esac
+          done
+          echo 'Deployment did not become ready within 10 minutes.' >&2
+          exit 1
