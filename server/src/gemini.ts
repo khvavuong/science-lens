@@ -154,7 +154,8 @@ function thinkingFor(model: string, level: 'low' | 'medium') {
 }
 
 /** Tên đồ vật một dòng: model đôi khi trả về chữ in trên vật kèm xuống dòng ("C\nh\nhồi ức…"). */
-export const cleanLabel = (s: string) => (s ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 60);
+export const cleanLabel = (s: string) => (s ?? '').normalize('NFC').replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
+  .replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 60);
 
 export async function recognize(imageBase64: string, mimeType = 'image/jpeg'): Promise<Recognition> {
   return hedged(config.models.vision, 'recognize', 6_000, 25_000, async (model, abortSignal) => {
