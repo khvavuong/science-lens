@@ -34,8 +34,11 @@ function recorderUri(recorder: AudioRecorder): string | null {
   try { return recorder.uri; } catch { return null; }
 }
 
+// Giữ playsInSilentMode: true: thiếu nó iOS về '.ambient', nút gạt im lặng tắt luôn giọng kể của cả app.
+const IDLE_AUDIO_MODE = { allowsRecording: false, playsInSilentMode: true } as const;
+
 function releaseAudioMode() {
-  if (Platform.OS !== 'web') void setAudioModeAsync({ allowsRecording: false }).catch(() => {});
+  if (Platform.OS !== 'web') void setAudioModeAsync(IDLE_AUDIO_MODE).catch(() => {});
 }
 
 /**
@@ -53,12 +56,16 @@ export function useAutoListen(handlers: AutoListenHandlers) {
   const session = useRef(0);
   const detector = useRef<ReturnType<typeof createVoiceDetector> | null>(null);
   const pending = useRef<Promise<void> | null>(null);
+  // Kết quả của lần dừng đang chạy; stop()/pause() giữa chừng hạ nó xuống 'discard'.
+  const outcomeRef = useRef<Outcome>('discard');
+  // Tăng mỗi lần stop()/pause(): start() đang chờ lần dừng trước sẽ tự hủy.
+  const cancels = useRef(0);
   const mounted = useRef(false);
 
   const recorder = useAudioRecorder(options, (status) => {
     // Listener gắn một lần theo recorder.id: chỉ đọc ref.
     if (phase.current !== 'recording') return;
-    if (status.hasError) void end('error');
+    if (status.hasError || status.mediaServicesDidReset) void end('error');
     else if (status.isFinished) void end('audio', status.url); // tự dừng ở forDuration: coi như 'max'
   });
   const recState = useAudioRecorderState(recorder, 100);
@@ -78,10 +85,11 @@ export function useAutoListen(handlers: AutoListenHandlers) {
       if (phase.current !== 'stopping') phase.current = 'idle';
       if (wasRecording) {
         const before = recorderUri(recorder);
-        void recorder.stop().catch(() => {}).then(() => {
+        const drop = () => {
           const uri = recorderUri(recorder) ?? before;
           if (uri) discardHuntAudio(uri);
-        });
+        };
+        try { void recorder.stop().catch(() => {}).then(drop); } catch { drop(); }
       }
       releaseAudioMode();
     };
@@ -100,30 +108,39 @@ export function useAutoListen(handlers: AutoListenHandlers) {
     feed(recState.metering, recState.durationMillis, recState.isRecording);
   }, [recState]);
 
-  /** Kết thúc lần ghi hiện tại đúng một lần; gọi lại khi đang dừng trả về cùng promise. */
+  /**
+   * Kết thúc lần ghi hiện tại đúng một lần; gọi lại khi đang dừng trả về cùng promise.
+   * Riêng 'discard' gọi lúc đang dừng vẫn có hiệu lực: hủy handler sắp gọi và xóa tệp.
+   */
   function end(outcome: Outcome, knownUrl?: string | null): Promise<void> {
     if (phase.current === 'idle') return Promise.resolve();
-    if (phase.current === 'stopping') return pending.current ?? Promise.resolve();
+    if (phase.current === 'stopping') {
+      if (outcome === 'discard') outcomeRef.current = 'discard';
+      return pending.current ?? Promise.resolve();
+    }
     const wasRecording = phase.current === 'recording';
     phase.current = 'stopping';
+    outcomeRef.current = outcome;
     session.current += 1;
     detector.current = null;
-    const job = finish(outcome, wasRecording, knownUrl ?? null).finally(() => {
+    const job = finish(wasRecording, knownUrl ?? null).finally(() => {
       if (pending.current === job) pending.current = null;
     });
     pending.current = job;
     return job;
   }
 
-  async function finish(outcome: Outcome, wasRecording: boolean, knownUrl: string | null) {
+  async function finish(wasRecording: boolean, knownUrl: string | null) {
     let uri = knownUrl;
     if (wasRecording) {
       const before = recorderUri(recorder);
       try { if (recorder.isRecording) await recorder.stop(); } catch { /* đã dừng hoặc đã giải phóng */ }
       uri = uri ?? recorderUri(recorder) ?? before;
     }
-    if (Platform.OS !== 'web') await setAudioModeAsync({ allowsRecording: false }).catch(() => {});
+    if (Platform.OS !== 'web') await setAudioModeAsync(IDLE_AUDIO_MODE).catch(() => {});
     phase.current = 'idle';
+    // Đọc sau các await: stop()/pause() trong lúc dừng đã có thể hạ xuống 'discard'.
+    const outcome = outcomeRef.current;
     if (!mounted.current) {
       if (uri) discardHuntAudio(uri);
       return;
@@ -140,8 +157,10 @@ export function useAutoListen(handlers: AutoListenHandlers) {
   }
 
   async function start() {
+    const cancel = cancels.current;
     if (pending.current) await pending.current;
-    if (phase.current !== 'idle' || !mounted.current) return;
+    // stop()/pause() gọi trong lúc chờ lần dừng trước: không bật micro nữa.
+    if (cancels.current !== cancel || phase.current !== 'idle' || !mounted.current) return;
     phase.current = 'starting';
     const id = ++session.current;
     const stale = () => !mounted.current || session.current !== id;
@@ -176,12 +195,14 @@ export function useAutoListen(handlers: AutoListenHandlers) {
   }
 
   function stop() {
+    cancels.current += 1;
     setPaused(false);
     setListening(false);
     void end('discard');
   }
 
   function pause() {
+    cancels.current += 1;
     setPaused(true);
     setListening(false);
     void end('discard');
