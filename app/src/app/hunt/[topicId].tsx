@@ -1,82 +1,47 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { CameraView } from 'expo-camera';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
-import { useFocusEffect, useIsFocused, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/Button';
-import { HuntAudio, HuntComposerRow, HuntField } from '@/components/HuntAudio';
-import { HuntFrame, HuntIconButton } from '@/components/HuntFrame';
+import { HuntFrame } from '@/components/HuntFrame';
+import { HuntLivePanel, type Caption } from '@/components/HuntLivePanel';
+import { HuntLiveTarget, HuntLiveTop } from '@/components/HuntLiveTop';
+import { LumoAura } from '@/components/LumoAura';
 import { HorizontalTrail, type NodeState } from '@/components/Trail';
-import type { HuntVerdict } from '@/lib/api';
-import { editHuntExplanation, huntTopics, loadHunts, retryHuntSave, setHuntPhoto, submitHunt, useHunts } from '@/lib/huntStore';
+import { liveBarState, micAction, scanChipText } from '@/lib/huntScreen';
+import { huntTopics, loadHunts, useHunts } from '@/lib/huntStore';
 import { HUNT_TEXT_LIMIT } from '@/lib/huntTypes';
-import { appendHuntFile } from '@/lib/huntUpload';
-import { preparePhoto } from '@/lib/preparePhoto';
+import { useHuntLive } from '@/lib/useHuntLive';
 import { colors, radius, space, type } from '@/theme';
-
-const verdictLabels: Record<HuntVerdict, string> = {
-  accepted: 'Đạt',
-  needs_detail: 'Bổ sung lời giải thích',
-  retake_photo: 'Chọn ảnh rõ hơn',
-  change_object: 'Thử một vật khác',
-};
-
-const verdictIcons: Record<HuntVerdict, keyof typeof Ionicons.glyphMap> = {
-  accepted: 'checkmark-circle',
-  needs_detail: 'chatbubble-ellipses-outline',
-  retake_photo: 'camera-outline',
-  change_object: 'swap-horizontal',
-};
 
 // Bộ đếm ký tự chỉ hiện khi gần chạm giới hạn.
 const COUNTER_FROM = Math.floor(HUNT_TEXT_LIMIT * 0.8);
+/** Khung ngắm đặt ở ~13% chiều cao màn. */
+const RETICLE_TOP = 0.13;
 
+/**
+ * Thử thách trực tiếp: camera toàn màn tự quét, Lumo hỏi bằng giọng, micro tự nghe, tự gửi chấm.
+ * Hoàn thành thì hiện danh sách đồ vật đã đạt.
+ */
 export default function HuntMission() {
-  const focused = useIsFocused();
   const { topicId } = useLocalSearchParams<{ topicId?: string }>();
   const id = typeof topicId === 'string' ? topicId : '';
   const progress = useHunts((state) => state.progress[id]);
   const loaded = useHunts((state) => state.loaded);
   const sending = useHunts((state) => state.submitting[id]);
-  const apiError = useHunts((state) => state.error[id]);
   const savingError = useHunts((state) => state.savingError[id]);
   const topic = huntTopics.find((candidate) => candidate.id === id && candidate.version === progress?.topicVersion);
   const [loadError, setLoadError] = useState(false);
-  const [hint, setHint] = useState(false);
-  const [choosing, setChoosing] = useState<false | 'camera' | 'library'>(false);
-  const [replacing, setReplacing] = useState(false);
-  const [audioBusy, setAudioBusy] = useState(false);
-  const [photoError, setPhotoError] = useState('');
+  const [hintOpen, setHintOpen] = useState(false);
   const [expanded, setExpanded] = useState<string[]>([]);
-  const choosingLock = useRef(false);
+  const { height } = useWindowDimensions();
+  const camera = useRef<CameraView>(null);
+  const live = useHuntLive(topic, camera);
 
   useEffect(() => { void loadHunts().catch(() => setLoadError(true)); }, []);
-  useFocusEffect(useCallback(() => () => setAudioBusy(false), [setAudioBusy]));
-
-  async function pick(camera: boolean) {
-    if (choosingLock.current || sending || audioBusy) return;
-    choosingLock.current = true;
-    setChoosing(camera ? 'camera' : 'library');
-    setPhotoError('');
-    try {
-      if (camera && Platform.OS !== 'web') {
-        const permission = await ImagePicker.requestCameraPermissionsAsync();
-        if (!permission.granted) throw new Error('Em có thể chọn ảnh từ thư viện hoặc bật quyền camera trong cài đặt.');
-      }
-      const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.85 };
-      const picked = camera ? await ImagePicker.launchCameraAsync(options) : await ImagePicker.launchImageLibraryAsync(options);
-      if (!picked.canceled && picked.assets[0]) {
-        await setHuntPhoto(id, await preparePhoto(picked.assets[0].uri));
-        setReplacing(false);
-      }
-    } catch (error) {
-      setPhotoError(error instanceof Error ? error.message : 'Chưa mở được ảnh. Em thử lại nhé.');
-    } finally {
-      choosingLock.current = false;
-      setChoosing(false);
-    }
-  }
 
   if (loadError) return <HuntFrame back="/hunt">
     <Text style={type.body}>Chưa mở được bài đã lưu.</Text>
@@ -85,108 +50,21 @@ export default function HuntMission() {
   if (!loaded) return <HuntFrame back="/hunt"><ActivityIndicator accessibilityLabel="Đang mở nhiệm vụ" color={colors.brand} /></HuntFrame>;
   if (!topic || !progress) return <HuntFrame back="/hunt"><Text style={type.body}>Chủ đề này chưa có trên thiết bị.</Text></HuntFrame>;
 
-  const draft = progress.draft;
-  const photo = draft?.photo;
-  const complete = Boolean(progress.completedAt);
   const count = progress.accepted.length;
-  const trail = Array.from({ length: topic.required }, (_, index): NodeState => index < count ? 'done' : index === count ? 'current' : 'todo');
-  const busy = !!choosing || !!sending || audioBusy;
-  const length = draft?.explanation.trim().length ?? 0;
-  const tooLong = length > HUNT_TEXT_LIMIT;
-  const picking = !photo || replacing;
-  const toggle = (itemId: string) => setExpanded((open) => open.includes(itemId) ? open.filter((value) => value !== itemId) : [...open, itemId]);
 
-  const input = draft && (
-    <TextInput accessibilityLabel="Lời giải thích" value={draft.explanation} multiline
-      editable={!sending && !choosing && !audioBusy}
-      onChangeText={(value) => editHuntExplanation(id, value)}
-      placeholder="Vì sao em chọn vật này?" placeholderTextColor={colors.muted} style={styles.input} maxFontSizeMultiplier={1.4} />
-  );
-  const send = (
-    <HuntIconButton icon="paper-plane" tone="primary" size={56} label="Gửi lời giải thích" loading={sending}
-      disabled={!!choosing || audioBusy || !length || tooLong}
-      onPress={() => void submitHunt(topic, (form, uri) => appendHuntFile(form, 'photo', uri))} />
-  );
-
-  const footer = complete ? undefined : (
-    <>
-      {!!photoError && <Text accessibilityLiveRegion="polite" style={styles.error}>{photoError}</Text>}
-      {!!apiError && <Text accessibilityLiveRegion="polite" style={styles.error}>{apiError}</Text>}
-      {!!savingError && <>
-        <Text accessibilityLiveRegion="polite" style={styles.error}>{savingError}</Text>
-        <Button label="Thử lưu lại" variant="secondary" disabled={busy} onPress={() => void retryHuntSave(topic).catch(() => {})} />
-      </>}
-      {picking && (
-        <View style={styles.pickRow}>
-          {replacing && <HuntIconButton icon="close" tone="soft" square size={56} label="Giữ ảnh hiện tại" disabled={busy} onPress={() => setReplacing(false)} />}
-          <Button style={styles.grow} icon="camera-outline" label={photo ? 'Chụp ảnh khác' : 'Chụp đồ vật'}
-            loading={choosing === 'camera'} disabled={busy} onPress={() => void pick(true)} />
-          <HuntIconButton icon="images-outline" tone="soft" square size={56} label="Chọn ảnh từ thư viện"
-            loading={choosing === 'library'} disabled={busy} onPress={() => void pick(false)} />
-        </View>
-      )}
-      {/* Ô soạn vẫn được giữ (ẩn) khi thay ảnh để không mất bản ghi âm chưa chuyển thành chữ. */}
-      {photo && draft && (
-        <View style={[styles.composer, replacing && styles.hidden]}>
-          {length > COUNTER_FROM && (
-            <Text accessibilityLiveRegion="polite" style={[styles.counter, tooLong && styles.over]}>{length}/{HUNT_TEXT_LIMIT}</Text>
-          )}
-          {focused ? (
-            <HuntAudio key={`${draft.id}-${photo.revision}`} onTranscript={(value) => editHuntExplanation(id, value)}
-              onBusy={setAudioBusy} disabled={!!sending || !!choosing} trailing={send}>{input}</HuntAudio>
-          ) : (
-            <HuntComposerRow trailing={send}><HuntField>{input}</HuntField></HuntComposerRow>
-          )}
-        </View>
-      )}
-    </>
-  );
-
-  return (
-    <HuntFrame back="/hunt" title={topic.title} footer={footer}>
-      <View style={styles.intro}>
-        <Text style={styles.task}>{topic.task}</Text>
-        <View style={styles.progress} accessible accessibilityLiveRegion="polite"
-          accessibilityLabel={complete ? 'Nhiệm vụ hoàn thành' : `Đã tìm ${count} trên ${topic.required} đồ vật`}>
-          <View style={styles.trail}><HorizontalTrail states={trail} size={20} /></View>
-          {complete ? <>
+  if (progress.completedAt) {
+    const trail = Array.from({ length: topic.required }, (): NodeState => 'done');
+    const toggle = (itemId: string) => setExpanded((open) => open.includes(itemId) ? open.filter((value) => value !== itemId) : [...open, itemId]);
+    return (
+      <HuntFrame back="/hunt" title={topic.title}>
+        <View style={styles.intro}>
+          <Text style={styles.task}>{topic.task}</Text>
+          <View style={styles.progress} accessible accessibilityLiveRegion="polite" accessibilityLabel="Nhiệm vụ hoàn thành">
+            <View style={styles.trail}><HorizontalTrail states={trail} size={20} /></View>
             <Ionicons name="checkmark-circle" size={20} color={colors.mintInk} />
             <Text style={styles.doneText}>Hoàn thành</Text>
-          </> : <Text style={type.bodyStrong}>{count}/{topic.required}</Text>}
-        </View>
-        {!complete && (
-          <Pressable accessibilityRole="button" accessibilityState={{ expanded: hint }} accessibilityLabel={hint ? 'Ẩn gợi ý' : 'Xem gợi ý'}
-            onPress={() => setHint(!hint)} hitSlop={4} style={({ pressed }) => [styles.hintToggle, pressed && styles.pressed]}>
-            <Ionicons name={hint ? 'bulb' : 'bulb-outline'} size={18} color={colors.brand} />
-            <Text style={styles.link}>{hint ? 'Ẩn gợi ý' : 'Xem gợi ý'}</Text>
-          </Pressable>
-        )}
-        {!complete && hint && <Text accessibilityLiveRegion="polite" style={styles.hint}>{topic.hint}</Text>}
-      </View>
-
-      {!complete && photo && (
-        <View style={styles.draft}>
-          <View>
-            <Image source={{ uri: photo.uri }} style={styles.preview} contentFit="cover" accessibilityLabel="Ảnh đồ vật em chọn" />
-            {!replacing && (
-              <View style={styles.previewAction}>
-                <HuntIconButton icon="camera-outline" tone="overlay" label="Thay ảnh" disabled={busy} onPress={() => setReplacing(true)} />
-              </View>
-            )}
           </View>
-          {!!draft?.result && (
-            <View style={styles.feedback}>
-              <View style={styles.feedbackHead}>
-                <Ionicons name={verdictIcons[draft.result.verdict]} size={20} color={colors.brand} />
-                <Text accessibilityLiveRegion="polite" style={type.bodyStrong}>{verdictLabels[draft.result.verdict]}</Text>
-              </View>
-              <Text style={type.body}>{draft.result.feedback}</Text>
-            </View>
-          )}
         </View>
-      )}
-
-      {count > 0 && (
         <View style={styles.found}>
           <Text style={styles.section} accessibilityRole="header">Đồ vật đã đạt</Text>
           {progress.accepted.map((item) => {
@@ -207,38 +85,85 @@ export default function HuntMission() {
             );
           })}
         </View>
-      )}
-    </HuntFrame>
+      </HuntFrame>
+    );
+  }
+
+  const { phase, voice, listen, scan, draft } = live;
+  const busy = phase === 'transcribing' || phase === 'evaluating' || !!sending;
+  const locked = !!live.label && !!draft?.photo;
+  const length = draft?.explanation.trim().length ?? 0;
+  const listeningNow = phase === 'listening' || listen.listening;
+  const action = micAction({ listening: listeningNow, hasText: live.hasText });
+
+  // Phụ đề: lời Lumo đang nói (trắng đậm); câu cũ khi đang nghe/chờ thì mờ.
+  const base = live.caption ?? { text: topic.task, tone: 'say' as const };
+  const caption: Caption = base.tone === 'say' && !voice.speaking && phase !== 'ready' && phase !== 'scanning' && phase !== 'asking'
+    ? { text: base.text, tone: 'dim' } : base;
+  const bar = liveBarState({ phase, speaking: voice.speaking, listening: listen.listening, paused: listen.paused, micDenied: listen.denied });
+  const barLevel = bar?.tone === 'lumo' ? voice.level : bar?.tone === 'me' ? listen.level : 0;
+
+  // Chip dưới khung ngắm: lỗi tạm thời, hoặc gợi ý của vòng quét (camera mode).
+  const scanChip = phase === 'scanning' && !live.cameraDenied ? scanChipText[scan.hint] : null;
+  const chip = live.chipError ?? scanChip;
+  const chipTappable = !live.chipError && phase === 'scanning' && scan.hint === 'paused' && !scan.scanning;
+  const reticleSize = Math.min(200, Math.round(height * 0.26));
+  const reticle = phase === 'scanning' && scan.scanning ? 'scanning' : locked && phase !== 'scanning' ? 'locked' : 'idle';
+  const showCamera = live.live && live.cameraGranted;
+
+  return (
+    <View style={styles.root}>
+      {live.live && <StatusBar style="light" />}
+      {showCamera && <CameraView ref={camera} style={StyleSheet.absoluteFill} facing="back" animateShutter={false} />}
+      <HuntLiveTarget top={Math.round(height * RETICLE_TOP)} size={reticleSize} reticle={reticle}
+        showReticle={showCamera && !live.cameraDenied} chip={chip} onChip={chipTappable ? live.resumeScan : undefined}
+        tag={locked && phase !== 'scanning' ? live.label : null} onTag={busy ? undefined : live.rescan} />
+      <HuntLiveTop count={count} required={topic.required} hint={topic.hint} hintOpen={hintOpen} onToggleHint={() => setHintOpen((open) => !open)} />
+      {/* Aura nằm dưới dải đáy, trên camera. */}
+      <LumoAura active={voice.speaking} level={voice.level} />
+      <KeyboardAvoidingView pointerEvents="box-none" style={styles.bottom} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <HuntLivePanel
+          caption={caption}
+          verdict={live.verdict}
+          bar={bar}
+          barLevel={barLevel}
+          onStart={phase === 'ready' ? () => void live.begin() : undefined}
+          picker={live.cameraDenied && !locked ? { busy: live.picking, onPick: () => void live.pickPhoto() } : undefined}
+          saving={savingError ? { message: savingError, busy: live.retrying, onRetry: () => void live.retrySave() } : undefined}
+          composer={{
+            value: draft?.explanation ?? '',
+            editable: locked && !busy,
+            onFocus: live.takeOver,
+            onChangeText: live.edit,
+            mic: action,
+            micPaused: listen.paused,
+            canTalkMore: action === 'send' && !listen.denied && locked && !busy,
+            onTalkMore: live.talk,
+            actionDisabled: !locked || busy || (action === 'send' && length > HUNT_TEXT_LIMIT),
+            sending: phase === 'evaluating' || !!sending,
+            countdown: live.counting,
+            onAction: live.micPress,
+            counter: length > COUNTER_FROM ? { length, limit: HUNT_TEXT_LIMIT } : null,
+          }}
+        />
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  grow: { flex: 1 },
+  root: { flex: 1, backgroundColor: colors.navy },
+  bottom: { ...StyleSheet.absoluteFill, justifyContent: 'flex-end' },
   pressed: { opacity: 0.6 },
   intro: { alignItems: 'center', gap: space.sm },
   task: { ...type.body, textAlign: 'center' },
   progress: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 28 },
   trail: { width: 108 },
   doneText: { ...type.bodyStrong, color: colors.mintInk },
-  hintToggle: { flexDirection: 'row', alignItems: 'center', gap: space.xs, minHeight: 48, paddingHorizontal: space.sm },
-  link: { ...type.bodyStrong, color: colors.brand },
-  hint: { ...type.body, color: colors.muted, textAlign: 'center' },
-  draft: { gap: space.sm },
-  preview: { width: '100%', aspectRatio: 4 / 3, borderRadius: radius.lg, backgroundColor: colors.bgAlt },
-  previewAction: { position: 'absolute', top: space.sm, right: space.sm },
-  feedback: { padding: space.md, gap: space.xs, borderRadius: radius.lg, backgroundColor: colors.brandSoft },
-  feedbackHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   found: { gap: space.xs },
   section: { ...type.caption, marginTop: space.sm },
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md, paddingVertical: space.sm, minHeight: 72 },
   thumb: { width: 56, height: 56, borderRadius: radius.sm, backgroundColor: colors.bgAlt },
   itemText: { flex: 1, gap: 2 },
   quote: { ...type.body, marginTop: space.xs },
-  pickRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
-  composer: { gap: space.xs },
-  hidden: { display: 'none' },
-  counter: { ...type.caption, alignSelf: 'flex-end' },
-  over: { color: colors.danger },
-  input: { ...type.body, flex: 1, minHeight: 48, maxHeight: 132, paddingTop: 12, paddingBottom: 12, paddingHorizontal: 0, textAlignVertical: 'top' },
-  error: { ...type.body, color: colors.danger },
 });
