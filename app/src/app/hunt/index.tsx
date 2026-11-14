@@ -1,79 +1,113 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Button } from '@/components/Button';
-import { HuntFrame } from '@/components/HuntFrame';
-import { activeHuntTopics, loadHunts, useHunts } from '@/lib/huntStore';
-import { colors, radius, space, type } from '@/theme';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, IconButton } from '@/components/Button';
+import { HuntFeaturedCard, HuntTopicCard, type HuntCardData } from '@/components/HuntTopicCard';
+import { activeHuntTopics, loadHunts, useHunts, type HuntTopic } from '@/lib/huntStore';
+import { colors, radius, space, touch, type } from '@/theme';
+
+// Mỗi chủ đề một màu nền riêng, gợi đúng hiện tượng (nước xanh, nam châm đỏ...). Chủ đề mới lấy màu theo thứ tự.
+const tints: Record<string, string> = {
+  friction: colors.surface,
+  magnetism: colors.dangerSoft,
+  absorption: colors.brandSoft,
+  sound: colors.lilacSoft,
+  elasticity: colors.lumenSoft,
+};
+const fallbackTints = [colors.lumenSoft, colors.brandSoft, colors.lilacSoft, colors.dangerSoft, colors.surface];
+
+const open = (topicId: string) => router.push({ pathname: '/hunt/[topicId]', params: { topicId } });
 
 export default function HuntList() {
+  const insets = useSafeAreaInsets();
   const loaded = useHunts((state) => state.loaded);
   const progress = useHunts((state) => state.progress);
   const [error, setError] = useState(false);
   useEffect(() => { void loadHunts().catch(() => setError(true)); }, []);
 
+  const cards = activeHuntTopics.map((topic: HuntTopic, index) => {
+    const saved = progress[topic.id];
+    const data: HuntCardData = {
+      title: topic.title,
+      task: topic.task,
+      icon: topic.icon,
+      tint: tints[topic.id] ?? fallbackTints[index % fallbackTints.length],
+      required: topic.required,
+      count: saved?.accepted.length ?? 0,
+      done: !!saved?.completedAt,
+      pending: !saved?.completedAt && !!saved?.draft?.photo,
+    };
+    return { id: topic.id, data, updatedAt: saved?.updatedAt ?? 0 };
+  });
+
+  // Thẻ nổi bật: chủ đề làm dở gần nhất; chưa có thì chủ đề đầu tiên chưa xong.
+  const inProgress = cards.filter(({ data }) => !data.done && (data.count > 0 || data.pending));
+  const featured = inProgress.length
+    ? inProgress.reduce((latest, card) => card.updatedAt > latest.updatedAt ? card : latest)
+    : cards.find(({ data }) => !data.done);
+  const rest = cards.filter((card) => card !== featured);
+  const ordered = [...rest.filter(({ data }) => !data.done), ...rest.filter(({ data }) => data.done)];
+
+  const found = cards.reduce((sum, { data }) => sum + data.count, 0);
+  const total = cards.reduce((sum, { data }) => sum + data.required, 0);
+  const summary = !featured ? `Em đã hoàn thành cả ${cards.length} chủ đề` : `Đã tìm ${found}/${total} đồ vật`;
+
+  const retry = () => { setError(false); void loadHunts().catch(() => setError(true)); };
+  const sides = { paddingLeft: insets.left + space.md, paddingRight: insets.right + space.md };
+
   return (
-    <HuntFrame back="/" title="Săn đồ vật">
-      <Text style={styles.lead}>Chọn chủ đề, tìm đồ vật quanh em và giải thích điều em thấy.</Text>
-      {error ? <Button label="Thử mở lại bài đã lưu" onPress={() => { setError(false); void loadHunts().catch(() => setError(true)); }} /> : !loaded ? (
-        <ActivityIndicator color={colors.brand} accessibilityLabel="Đang mở nhiệm vụ" />
-      ) : (
-        <View style={styles.group}>
-          {activeHuntTopics.map((topic, index) => {
-            const saved = progress[topic.id];
-            const count = saved?.accepted.length ?? 0;
-            const done = !!saved?.completedAt;
-            const started = count > 0 || !!saved?.draft?.photo;
-            const status = done ? 'Đã hoàn thành' : `Đã tìm ${count} trên ${topic.required} đồ vật`;
-            return (
-              <Pressable key={topic.id} accessibilityRole="button" accessibilityLabel={`${topic.title}, ${status}`}
-                onPress={() => router.push({ pathname: '/hunt/[topicId]', params: { topicId: topic.id } })}
-                style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-                <View style={[styles.icon, done && styles.iconDone]}>
-                  <Ionicons name={topic.icon as keyof typeof Ionicons.glyphMap} size={24} color={done ? colors.mintInk : colors.brand} />
-                </View>
-                <View style={[styles.body, index > 0 && styles.divided]}>
-                  <View style={styles.text}>
-                    <Text style={type.bodyStrong} numberOfLines={2}>{topic.title}</Text>
-                    {done ? (
-                      <View style={styles.status}>
-                        <Ionicons name="checkmark-circle" size={16} color={colors.mintInk} />
-                        <Text style={styles.doneText}>Hoàn thành</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.status}>
-                        {Array.from({ length: topic.required }, (_, slot) => (
-                          <View key={slot} style={[styles.pip, slot < count ? styles.pipDone : slot === count && started ? styles.pipNext : undefined]} />
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.muted} />
-                </View>
-              </Pressable>
-            );
-          })}
+    <View style={styles.root}>
+      <View style={[styles.header, sides, { paddingTop: insets.top + space.sm }]}>
+        <IconButton icon="chevron-back" label="Quay lại" size={touch} onPress={() => router.canGoBack() ? router.back() : router.replace('/')} />
+        <View style={styles.headerText}>
+          <Text style={type.h1} accessibilityRole="header" numberOfLines={1} maxFontSizeMultiplier={1.3}>Săn đồ vật</Text>
+          <Text style={type.caption} numberOfLines={1} maxFontSizeMultiplier={1.3}>{loaded && !error ? summary : ' '}</Text>
         </View>
-      )}
-    </HuntFrame>
+      </View>
+      <ScrollView style={styles.scroll} contentContainerStyle={[sides, styles.content, { paddingBottom: insets.bottom + space.lg }]}>
+        <View style={styles.container}>
+          {error ? (
+            <View style={styles.error}>
+              <Text style={[type.body, styles.errorText]}>Chưa mở được bài em đã lưu.</Text>
+              <Button label="Thử mở lại bài đã lưu" onPress={retry} />
+            </View>
+          ) : !loaded ? (
+            <View style={styles.container} accessible accessibilityLabel="Đang mở nhiệm vụ">
+              <View style={[styles.skeleton, styles.skeletonFeatured]} />
+              <View style={styles.grid}>
+                {[0, 1, 2, 3].map((slot) => <View key={slot} style={[styles.skeleton, styles.cell, styles.skeletonTile]} />)}
+              </View>
+            </View>
+          ) : (
+            <>
+              {featured && <HuntFeaturedCard data={featured.data} onPress={() => open(featured.id)} />}
+              <View style={styles.grid}>
+                {ordered.map(({ id, data }) => (
+                  <HuntTopicCard key={id} data={data} style={styles.cell} onPress={() => open(id)} />
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  lead: { ...type.body, color: colors.muted, textAlign: 'center' },
-  // Nhóm phẳng như danh sách cài đặt: một nền trắng, hàng ngăn bằng vạch mảnh, không viền từng thẻ.
-  group: { backgroundColor: colors.white, borderRadius: radius.lg, overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingLeft: space.md, minHeight: 72 },
-  pressed: { backgroundColor: colors.bgAlt },
-  icon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: radius.sm, backgroundColor: colors.brandSoft },
-  iconDone: { backgroundColor: colors.mintSoft },
-  body: { flex: 1, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.md, paddingRight: space.md },
-  divided: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider },
-  text: { flex: 1, gap: 6 },
-  status: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 16 },
-  pip: { width: 10, height: 10, borderRadius: 5, borderWidth: 1.5, borderColor: colors.trail },
-  pipDone: { backgroundColor: colors.brand, borderColor: colors.brand },
-  pipNext: { backgroundColor: colors.lumen, borderColor: colors.lumenShade },
-  doneText: { ...type.caption, color: colors.mintInk },
+  root: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingBottom: space.sm },
+  headerText: { flex: 1 },
+  scroll: { flex: 1 },
+  content: { paddingTop: space.sm },
+  container: { width: '100%', maxWidth: 560, alignSelf: 'center', gap: space.md },
+  // Hai cột; nếu lẻ thẻ thì thẻ cuối tự giãn hết hàng.
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md - space.xs },
+  cell: { flexGrow: 1, flexBasis: '40%' },
+  skeleton: { backgroundColor: colors.bgAlt, borderRadius: radius.lg },
+  skeletonFeatured: { height: 196, borderRadius: radius.xl },
+  skeletonTile: { height: 156 },
+  error: { gap: space.md, paddingTop: space.lg },
+  errorText: { color: colors.muted },
 });

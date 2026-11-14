@@ -39,6 +39,8 @@ export const colors = {
   whiteSubtle: '#FFFFFF24',
   whiteBadge: '#FFFFFF1F',
   pillShadow: '#0F245215',
+  lilacSoft: '#EEEAFA', // nền thẻ chủ đề thứ năm của Săn đồ vật, cạnh brandSoft/lumenSoft/surface/dangerSoft
+  track: '#0F24521F', // đoạn tiến độ chưa có trên nền thẻ nhạt (navy 12%)
 };
 
 export const illustrationColors = {
