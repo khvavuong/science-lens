@@ -9,6 +9,7 @@ export interface LeaderboardEntry {
 }
 
 // Tên và avatar từ danh mục anon-v1. Mã và điểm cố định dành cho bản mẫu.
+// `suffix` chỉ dùng làm khóa nội bộ, không hiển thị cho trẻ.
 export const leaderboardEntries: readonly LeaderboardEntry[] = [
   {
     rank: 1, name: 'Cáo Sao Hỏa', suffix: 'PMFVT2MC', points: 1480,
@@ -131,3 +132,41 @@ export const leaderboardEntries: readonly LeaderboardEntry[] = [
     avatar: require('../../assets/leaderboard/turtle.webp'),
   },
 ];
+
+/**
+ * Điểm của người dùng tính từ lịch sử trên máy:
+ * mỗi câu quiz đúng được 100 điểm, mỗi hành trình hoàn thành được thêm 50 điểm.
+ * Ví dụ: 2 hành trình, đúng 3/3 và 2/3 câu → 5 × 100 + 2 × 50 = 600 điểm.
+ */
+export const POINTS_PER_CORRECT = 100;
+export const POINTS_PER_JOURNEY = 50;
+
+export function pointsFromHistory(history: readonly { score: number }[]) {
+  return history.reduce((sum, r) => sum + r.score * POINTS_PER_CORRECT + POINTS_PER_JOURNEY, 0);
+}
+
+export interface Standing {
+  readonly key: string;
+  readonly rank: number;
+  readonly name: string;
+  readonly points: number;
+  /** Không có avatar nghĩa là hàng của chính người dùng (avatar trung tính). */
+  readonly avatar?: ImageSource | number;
+  readonly you: boolean;
+}
+
+export const YOU_KEY = 'you';
+
+/**
+ * Ghép người dùng vào dữ liệu mẫu rồi xếp hạng lại theo điểm.
+ * Hạng = 1 + số người có điểm cao hơn, nên bằng điểm thì cùng hạng; người dùng đứng trước khi bằng điểm.
+ * `youPoints = null` (chưa có hành trình) → chỉ có dữ liệu mẫu.
+ */
+export function standingsWith(youPoints: number | null): Standing[] {
+  const all: Standing[] = leaderboardEntries.map((e) => ({
+    key: e.suffix, rank: 0, name: e.name, points: e.points, avatar: e.avatar, you: false,
+  }));
+  if (youPoints !== null) all.push({ key: YOU_KEY, rank: 0, name: 'Bạn', points: youPoints, you: true });
+  all.sort((a, b) => b.points - a.points || Number(b.you) - Number(a.you));
+  return all.map((s) => ({ ...s, rank: 1 + all.filter((o) => o.points > s.points).length }));
+}

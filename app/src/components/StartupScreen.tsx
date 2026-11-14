@@ -1,12 +1,11 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { StartupWordmark } from '@/components/StartupWordmark';
-import { Wordmark } from '@/components/Wordmark';
 import { colors, space } from '@/theme';
 
-export function StartupScreen({ onIntroEnd }: { onIntroEnd?: () => void }) {
+export function StartupScreen({ onIntroEnd }: { onIntroEnd: () => void }) {
   return (
     <View style={styles.root}>
-      {onIntroEnd ? <StartupWordmark onIntroEnd={onIntroEnd} /> : <Wordmark width={224} />}
+      <StartupWordmark onIntroEnd={onIntroEnd} />
       <ActivityIndicator
         color={colors.brand}
         accessibilityRole="progressbar"

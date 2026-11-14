@@ -1,0 +1,689 @@
+<!doctype html>
+<!--
+  MOCKUP TEMPLATE: mobile-ux-design skill. Đọc references/visual-craft.md trước khi dựng.
+
+  1. Copy file này ra thư mục đề xuất. Sửa <title>, tiêu đề trang (≤ 1 câu mô tả).
+  2. Token: thay nhóm "APP TOKENS" bằng màu/font/bo góc của dự án.
+     - Font: dự án có font riêng (vd. Be Vietnam Pro) thì thêm vào link Google Fonts và đặt --app-font.
+       Không có thì để trống --app-font: khung tự dùng Inter (iOS) hoặc Roboto (Android).
+     - Dark mode: chỉ giữ nút "Tối" nếu app hỗ trợ; sửa token trong [data-app-theme="dark"].
+  3. Mỗi phương án = <section class="option">; mỗi khung = <figure class="phone">.
+     Bên trong .screen: .statusbar (giữ nguyên) → .content (bố cục app) → .homebar.
+     Trong .content: thanh trên (.appbar) + vùng cuộn (.scroll) + thanh dưới (.bottom). Sheet, toast đặt trong .content.
+  4. Icon: <span class="ms">tên_icon</span> (Material Symbols Rounded, tra tên ở fonts.google.com/icons).
+     KHÔNG dùng emoji làm icon. Cỡ: thêm class .sm (nhỏ) hoặc mặc định.
+  5. Đơn vị trong khung là pt thật (1pt iOS ≈ 1dp Android): kích thước viết calc(N * var(--pt)),
+     cỡ chữ viết calc(var(--fs-body) * var(--u)) hoặc dùng class .t-cap/.t-sub/.t-body/.t-title/.t-display
+     (thang 5 cỡ 13/15/17/22/34 iOS, 12/14/16/22/28 Android; --u co theo nút "Chữ to"). Mỗi màn ≤ 4 cỡ.
+     Nhờ vậy số đo trong mockup = số đo trong đặc tả cho dev.
+     Số tiền/giờ/điểm: <span class="amount">45.000&nbsp;đ</span> (không bẻ dòng). Nhãn nút/chip/tab: luôn 1 dòng.
+  6. Tương tác (mọi cử chỉ đều có nút thay thế trong mockup, như app thật):
+       Mock.swipe(el, {axis:'x', threshold:0.35, onCommit(dir){…}})  vuốt theo tay, quá ngưỡng thì xác nhận
+       Mock.sheet(sheetEl, {snaps:[0, 0.5, 0.9], scrim})             bottom sheet nhiều nấc (0 = đóng)
+       Mock.toast(screenEl, 'Đã xóa', {action:'Hoàn tác', onAction(){…}})
+       Mock.haptic(el, 'success')    hiện nhãn tím "haptic" ở chỗ app thật sẽ rung
+       Mock.keyboard(containerEl, 'text'|'numeric')   vẽ bàn phím hệ thống để thấy diện tích bị chiếm
+       Mock.reduced()                true nếu đang bật Reduce Motion
+  7. QA: nút "Kiểm tra" chạy Mock.qa() (bản sao của assets/qa-check.js), liệt kê lỗi layout + dấu hiệu "AI slop".
+     Mục tiêu: 0 lỗi, hoặc lỗi còn lại là có chủ đích và được ghi chú lý do.
+  8. Ghi chú cho người xem đặt NGOÀI khung (ul.points, .note đánh số). Trong khung chỉ có UI thật.
+  9. Mặc định phẳng: tùy chọn chưa chọn = nền surface, không viền; đã chọn = nền màu nhấn. Hạn chế thêm viền (QA cảnh báo khi > 8 phần tử có viền/khung).
+-->
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Đề xuất UX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block">
+<style>
+  :root {
+    /* ===== APP TOKENS: thay bằng design system của dự án ===== */
+    /* --app-font: "Be Vietnam Pro", sans-serif;   bỏ comment khi dự án có font riêng; không đặt = Inter (iOS) / Roboto (Android) */
+    --app-bg: #FFFFFF;
+    --app-surface: #F3F4F6;            /* bề mặt tonal: card, input */
+    --app-surface-2: #E9EBEF;
+    --app-text: #111827;
+    --app-muted: #6B7280;
+    --app-divider: #E5E7EB;
+    --app-primary: #2557D6;
+    --app-primary-soft: #E8EEFC;       /* nền tonal của màu nhấn: chip chọn, icon danh mục */
+    --app-on-primary: #FFFFFF;
+    --app-success: #0F8A5F;
+    --app-success-soft: #E3F4EC;
+    --app-error: #C9372C;
+    --app-error-soft: #FBE9E7;
+    --app-warning-soft: #FFF4D6;
+    --r-sm: 8px; --r-md: 14px; --r-lg: 24px;
+    --elev-1: 0 1px 2px rgba(17,24,39,.08), 0 1px 3px rgba(17,24,39,.06);
+    --elev-2: 0 4px 12px rgba(17,24,39,.10);
+    --dur-tap: 150ms; --dur-sheet: 280ms; --dur-screen: 420ms;
+    --ease-out: cubic-bezier(.2,.8,.2,1);
+
+    /* ===== PAGE: khung trang mockup, thường giữ nguyên ===== */
+    --page-bg: #F2F2F0; --page-text: #18181B; --page-muted: #6B6B70; --page-card: #FFFFFF;
+    --page-border: #E2E2DE; --page-accent: #18181B; --frame: #101012;
+  }
+  [data-app-theme="dark"] .screen {
+    --app-bg: #111318; --app-surface: #1B1E25; --app-surface-2: #252932; --app-text: #ECEDF0; --app-muted: #9BA1AC;
+    --app-divider: #2A2E37; --app-primary: #8AA8FF; --app-primary-soft: #1E2A4A; --app-on-primary: #0B1430;
+    --app-success-soft: #12302A; --app-error-soft: #3A1D1B; --app-warning-soft: #3A3218;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --page-bg: #141416; --page-text: #EDEDEF; --page-muted: #A1A1AA; --page-card: #1C1C1F; --page-border: #2C2C30; --page-accent: #EDEDEF; --frame: #000; }
+  }
+  :root[data-theme="dark"] { --page-bg: #141416; --page-text: #EDEDEF; --page-muted: #A1A1AA; --page-card: #1C1C1F; --page-border: #2C2C30; --page-accent: #EDEDEF; --frame: #000; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page-bg); color: var(--page-text); font: 14px/1.5 Inter, Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  header.page { max-width: 1440px; margin: 0 auto; padding: 28px 16px 8px; }
+  header.page h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  header.page p { margin: 0; color: var(--page-muted); max-width: 72ch; }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; align-items: center; }
+  .controls button { font: 500 13px Inter, sans-serif; padding: 6px 12px; min-height: 32px; border-radius: 8px; border: 1px solid var(--page-border); background: var(--page-card); color: var(--page-text); cursor: pointer; white-space: nowrap; }
+  .controls button[aria-pressed="true"] { background: var(--page-accent); border-color: var(--page-accent); color: var(--page-bg); }
+  .controls .sep { width: 1px; height: 20px; background: var(--page-border); margin: 0 4px; }
+  #qa-report { max-width: 1440px; margin: 8px auto 0; padding: 0 16px; font-size: 13px; }
+  #qa-report:empty { display: none; }
+  #qa-report pre { white-space: pre-wrap; background: var(--page-card); border: 1px solid var(--page-border); border-radius: 8px; padding: 12px; margin: 0; max-height: 260px; overflow: auto; }
+
+  main { max-width: 1440px; margin: 0 auto; padding: 16px 16px 56px; display: grid; gap: 20px; grid-template-columns: 1fr; } /* mỗi phương án một hàng: các khung không bị cắt */
+  .option { background: var(--page-card); border: 1px solid var(--page-border); border-radius: 16px; padding: 20px; min-width: 0; }
+  .option .tag { display: inline-block; font-size: 12px; font-weight: 600; color: var(--page-muted); margin-bottom: 2px; letter-spacing: .02em; text-transform: uppercase; }
+  .option h2 { margin: 0; font-size: 17px; font-weight: 650; }
+  .option > p { margin: 4px 0 16px; color: var(--page-muted); }
+  .option ul.points { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; color: var(--page-muted); }
+  .option ul.points li { display: flex; gap: 8px; align-items: baseline; }
+  .phones { display: flex; flex-wrap: wrap; gap: 20px; padding-bottom: 6px; }
+  @media (max-width: 760px) { .phones { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; } } /* điện thoại: cuộn ngang */
+  .note { flex: 0 0 auto; display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #6D28D9; color: #fff; font: 700 11px/1 Inter, sans-serif; }
+
+  /* ===== Khung điện thoại: 390×844pt. Mọi kích thước trong khung viết bằng pt: calc(N * var(--pt)) ===== */
+  figure.phone { margin: 0; flex: 0 0 auto; width: min(360px, 82vw); scroll-snap-align: start; }
+  figure.phone figcaption { font-size: 12.5px; color: var(--page-muted); margin-top: 8px; text-align: center; }
+  .device { position: relative; aspect-ratio: 390 / 844; border-radius: 46px; background: var(--frame); padding: 9px; container-type: inline-size; }
+  body.small .device { aspect-ratio: 375 / 667; border-radius: 34px; }
+  [data-platform="android"] .device { border-radius: 34px; }
+  .screen {
+    /* 1pt (iOS) ≈ 1dp (Android) theo tỉ lệ khung; --u = 1pt nhân hệ số chữ (nút "Chữ to") */
+    --pt: calc((100cqw - 18px) / 390); --u: calc(var(--pt) * var(--text-scale, 1));
+    /* Thang chữ 5 cỡ (iOS HIG). Mỗi màn nên dùng ≤ 4 cỡ */
+    --fs-cap: 13; --fs-sub: 15; --fs-body: 17; --fs-title: 22; --fs-display: 34;
+    position: relative; width: 100%; height: 100%; border-radius: 38px; overflow: hidden;
+    background: var(--app-bg); color: var(--app-text);
+    font-family: var(--app-font, var(--platform-font)); font-size: calc(var(--fs-body) * var(--u)); line-height: 1.3;
+    display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; touch-action: pan-y;
+    font-variant-numeric: tabular-nums;
+  }
+  body.small .screen { --pt: calc((100cqw - 18px) / 375); border-radius: 26px; }
+  [data-platform="ios"] { --platform-font: "Inter", sans-serif; }
+  [data-platform="android"] { --platform-font: "Roboto", sans-serif; }
+  /* Material 3: body large 16, body medium 14, body small 12, title large 22, headline 28 */
+  [data-platform="android"] .screen { border-radius: 26px; --fs-cap: 12; --fs-sub: 14; --fs-body: 16; --fs-title: 22; --fs-display: 28; }
+  body.big-text { --text-scale: 1.3; }
+  .screen * { scrollbar-width: none; }
+  .screen *::-webkit-scrollbar { display: none; }
+  .t-cap { font-size: calc(var(--fs-cap) * var(--u)); } .t-sub { font-size: calc(var(--fs-sub) * var(--u)); }
+  .t-body { font-size: calc(var(--fs-body) * var(--u)); } .t-title { font-size: calc(var(--fs-title) * var(--u)); font-weight: 700; line-height: 1.2; }
+  .t-display { font-size: calc(var(--fs-display) * var(--u)); font-weight: 700; line-height: 1.15; letter-spacing: -0.01em; }
+
+  /* Thanh trạng thái + Home indicator (không co theo "Chữ to", như máy thật) */
+  .statusbar { flex: 0 0 auto; height: calc(54 * var(--pt)); display: flex; align-items: center; justify-content: space-between; padding: calc(4 * var(--pt)) calc(30 * var(--pt)) 0 calc(36 * var(--pt)); font-weight: 600; font-size: calc(16 * var(--pt)); position: relative; z-index: 5; }
+  .statusbar .cam { position: absolute; left: 50%; top: calc(11 * var(--pt)); transform: translateX(-50%); width: calc(124 * var(--pt)); height: calc(36 * var(--pt)); border-radius: 999px; background: #000; }
+  .statusbar .sys { display: flex; gap: calc(5 * var(--pt)); align-items: center; }
+  .statusbar svg { height: calc(12 * var(--pt)); width: auto; fill: currentColor; }
+  body.small .statusbar { height: calc(20 * var(--pt)); padding: 0 calc(16 * var(--pt)); font-size: calc(13 * var(--pt)); }
+  body.small .statusbar .cam { display: none; }
+  [data-platform="android"] .statusbar { height: calc(32 * var(--pt)); padding: 0 calc(20 * var(--pt)); font-size: calc(14 * var(--pt)); font-weight: 500; }
+  [data-platform="android"] .statusbar .cam { width: calc(12 * var(--pt)); height: calc(12 * var(--pt)); top: calc(10 * var(--pt)); }
+  .content { flex: 1 1 auto; position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+  .scroll { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+  .homebar { flex: 0 0 auto; height: calc(34 * var(--pt)); display: flex; align-items: center; justify-content: center; }
+  .homebar::after { content: ""; width: calc(134 * var(--pt)); height: calc(5 * var(--pt)); border-radius: 99px; background: currentColor; opacity: .9; }
+  body.small .homebar { height: calc(20 * var(--pt)); }
+  [data-platform="android"] .homebar { height: calc(24 * var(--pt)); }
+  [data-platform="android"] .homebar::after { width: calc(108 * var(--pt)); height: calc(4 * var(--pt)); opacity: .45; }
+  [data-platform="ios"] .android-only, [data-platform="android"] .ios-only { display: none !important; }
+
+  .thumb-zone { display: none; position: absolute; left: 0; right: 0; bottom: 0; height: 42%; pointer-events: none; z-index: 50; background: rgba(15,138,95,.12); border-top: 1px dashed rgba(15,138,95,.6); }
+  .thumb-zone::after { content: "Vùng ngón cái"; position: absolute; top: 4px; left: 8px; font: 600 10px/1 Inter, sans-serif; color: #0B6B49; }
+  body.show-thumb .thumb-zone { display: block; }
+
+  /* ===== Thành phần app: kích thước theo pt thật, chữ theo thang 5 cỡ ===== */
+  .ms { font-family: "Material Symbols Rounded"; font-weight: 400; font-style: normal; font-size: calc(24 * var(--u)); line-height: 1; letter-spacing: normal; text-transform: none; white-space: nowrap; direction: ltr; font-feature-settings: "liga"; font-variation-settings: "FILL" 0, "wght" 400, "opsz" 24; display: inline-block; vertical-align: middle; user-select: none; }
+  .ms.sm { font-size: calc(20 * var(--u)); } .ms.fill { font-variation-settings: "FILL" 1, "wght" 400, "opsz" 24; }
+  .appbar { flex: 0 0 auto; display: flex; align-items: center; gap: calc(4 * var(--pt)); min-height: calc(44 * var(--pt)); padding: 0 calc(8 * var(--pt)); }
+  .appbar .title { flex: 1; font-weight: 600; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-platform="android"] .appbar { min-height: calc(64 * var(--pt)); }
+  [data-platform="android"] .appbar .title { text-align: left; font-weight: 500; font-size: calc(var(--fs-title) * var(--u)); padding-left: calc(4 * var(--pt)); }
+  .large-title { font-size: calc(var(--fs-display) * var(--u)); font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; padding: calc(4 * var(--pt)) calc(16 * var(--pt)) calc(8 * var(--pt)); }
+  [data-platform="android"] .large-title { font-weight: 500; }
+  .h2 { font-size: calc(var(--fs-title) * var(--u)); font-weight: 700; line-height: 1.2; }
+  .body { font-size: calc(var(--fs-body) * var(--u)); }
+  .sub { font-size: calc(var(--fs-sub) * var(--u)); color: var(--app-muted); }
+  .cap { font-size: calc(var(--fs-cap) * var(--u)); color: var(--app-muted); }
+  .bottom { flex: 0 0 auto; padding: calc(8 * var(--pt)) calc(16 * var(--pt)) calc(8 * var(--pt)); display: flex; gap: calc(8 * var(--pt)); background: var(--app-bg); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: calc(6 * var(--pt)); min-height: calc(50 * var(--pt)); padding: 0 calc(20 * var(--pt)); border: 0; border-radius: var(--r-md); font-weight: 600; font-size: calc(var(--fs-body) * var(--u)); line-height: 1.1; font-family: inherit; white-space: nowrap; cursor: pointer; transition: transform var(--dur-tap) ease-out, background-color var(--dur-tap); }
+  [data-platform="android"] .btn { border-radius: 999px; font-weight: 500; min-height: calc(48 * var(--pt)); }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: var(--app-primary); color: var(--app-on-primary); }
+  .btn.tonal { background: var(--app-primary-soft); color: var(--app-primary); }
+  .btn.ghost { background: transparent; color: var(--app-primary); }
+  .btn.block { flex: 1 1 auto; width: 100%; }
+  .btn[disabled] { background: var(--app-surface-2); color: var(--app-muted); cursor: default; transform: none; }
+  .icon-btn { width: calc(44 * var(--pt)); height: calc(44 * var(--pt)); flex: 0 0 auto; display: grid; place-items: center; border: 0; background: transparent; color: inherit; border-radius: 50%; cursor: pointer; padding: 0; }
+  [data-platform="android"] .icon-btn { width: calc(48 * var(--pt)); height: calc(48 * var(--pt)); }
+  .icon-btn:active { background: var(--app-surface); }
+  .chip { display: inline-flex; align-items: center; gap: calc(6 * var(--pt)); min-height: calc(40 * var(--pt)); padding: 0 calc(14 * var(--pt)); border-radius: var(--r-sm); border: 0; background: var(--app-surface); color: var(--app-text); font-weight: 500; font-size: calc(var(--fs-sub) * var(--u)); font-family: inherit; white-space: nowrap; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: var(--app-primary); color: var(--app-on-primary); }
+  .chips { display: flex; gap: calc(8 * var(--pt)); overflow-x: auto; padding: 0 calc(16 * var(--pt)); }
+  .seg { display: flex; padding: calc(2 * var(--pt)); border-radius: calc(10 * var(--pt)); background: var(--app-surface); }
+  .seg button { flex: 1; min-height: calc(40 * var(--pt)); border: 0; border-radius: calc(8 * var(--pt)); background: transparent; font-weight: 500; font-size: calc(var(--fs-sub) * var(--u)); font-family: inherit; color: var(--app-text); white-space: nowrap; cursor: pointer; padding: 0 calc(12 * var(--pt)); }
+  .seg button[aria-pressed="true"] { background: var(--app-bg); box-shadow: var(--elev-1); font-weight: 600; }
+  [data-platform="android"] .seg { background: transparent; border: 1px solid var(--app-divider); border-radius: 999px; padding: 0; overflow: hidden; }
+  [data-platform="android"] .seg button { border-radius: 0; }
+  [data-platform="android"] .seg button + button { border-left: 1px solid var(--app-divider); }
+  [data-platform="android"] .seg button[aria-pressed="true"] { background: var(--app-primary-soft); box-shadow: none; }
+  .field { display: flex; align-items: center; gap: calc(8 * var(--pt)); min-height: calc(48 * var(--pt)); padding: 0 calc(14 * var(--pt)); border-radius: var(--r-md); background: var(--app-surface); color: var(--app-muted); font-size: calc(var(--fs-body) * var(--u)); }
+  .list { display: flex; flex-direction: column; }
+  .row { display: flex; align-items: center; gap: calc(12 * var(--pt)); min-height: calc(60 * var(--pt)); padding: calc(8 * var(--pt)) calc(16 * var(--pt)); background: var(--app-bg); position: relative; }
+  .row + .row::before { content: ""; position: absolute; top: 0; right: 0; left: calc(68 * var(--pt)); border-top: 1px solid var(--app-divider); }
+  .row .lead { width: calc(40 * var(--pt)); height: calc(40 * var(--pt)); flex: 0 0 auto; border-radius: calc(12 * var(--pt)); display: grid; place-items: center; background: var(--app-primary-soft); color: var(--app-primary); }
+  .row .lead .ms { font-size: calc(22 * var(--u)); }
+  .row .main { flex: 1 1 auto; min-width: 0; }
+  .row .t { font-size: calc(var(--fs-body) * var(--u)); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .s { font-size: calc(var(--fs-sub) * var(--u)); color: var(--app-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .trail { font-size: calc(var(--fs-body) * var(--u)); font-weight: 600; white-space: nowrap; }
+  .section-h { padding: calc(20 * var(--pt)) calc(16 * var(--pt)) calc(6 * var(--pt)); font-size: calc(var(--fs-sub) * var(--u)); font-weight: 600; color: var(--app-muted); display: flex; justify-content: space-between; }
+  .card { background: var(--app-surface); border-radius: var(--r-md); padding: calc(16 * var(--pt)); }
+  .progress { height: calc(6 * var(--pt)); border-radius: 99px; background: var(--app-surface-2); overflow: hidden; }
+  .progress > i { display: block; height: 100%; background: var(--app-primary); border-radius: inherit; transition: width var(--dur-sheet) var(--ease-out); }
+  .tabbar { flex: 0 0 auto; display: flex; border-top: 1px solid var(--app-divider); background: var(--app-bg); min-height: calc(49 * var(--pt)); }
+  .tabbar button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: calc(2 * var(--pt)); border: 0; background: none; color: var(--app-muted); font-weight: 500; font-size: calc(10 * var(--u)); font-family: inherit; cursor: pointer; white-space: nowrap; }
+  .tabbar button[aria-selected="true"] { color: var(--app-primary); }
+  [data-platform="android"] .tabbar { border-top: 0; background: var(--app-surface); min-height: calc(80 * var(--pt)); }
+  [data-platform="android"] .tabbar button { font-size: calc(12 * var(--u)); gap: calc(4 * var(--pt)); }
+  [data-platform="android"] .tabbar button[aria-selected="true"] { color: var(--app-text); }
+  [data-platform="android"] .tabbar button[aria-selected="true"] .ms { background: var(--app-primary-soft); color: var(--app-primary); border-radius: 99px; padding: calc(4 * var(--pt)) calc(20 * var(--pt)); font-variation-settings: "FILL" 1; }
+  .fab { position: absolute; right: calc(16 * var(--pt)); bottom: calc(16 * var(--pt)); z-index: 15; width: calc(56 * var(--pt)); height: calc(56 * var(--pt)); border-radius: calc(16 * var(--pt)); border: 0; background: var(--app-primary-soft); color: var(--app-primary); display: grid; place-items: center; box-shadow: var(--elev-2); cursor: pointer; }
+  .stack { display: flex; flex-direction: column; gap: calc(12 * var(--pt)); }
+  .hstack { display: flex; align-items: center; gap: calc(8 * var(--pt)); }
+  .grow { flex: 1 1 auto; min-width: 0; }
+  .pad { padding: calc(16 * var(--pt)); } .px { padding-left: calc(16 * var(--pt)); padding-right: calc(16 * var(--pt)); }
+  .muted { color: var(--app-muted); } .nowrap { white-space: nowrap; }
+  /* Số tiền, giờ, điểm: không bao giờ bẻ dòng; viết "45.000&nbsp;đ" */
+  .amount { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .amount.hero { font-size: calc(56 * var(--u)); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; }
+
+  /* Sheet, scrim, toast, haptic, bàn phím hệ thống */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.32); opacity: 0; pointer-events: none; transition: opacity var(--dur-sheet); z-index: 19; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: 100%; background: var(--app-bg); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: var(--elev-2); z-index: 20; transform: translateY(100%); will-change: transform; display: flex; flex-direction: column; }
+  .sheet .handle { flex: 0 0 auto; height: calc(24 * var(--pt)); display: grid; place-items: center; cursor: grab; touch-action: none; }
+  .sheet .handle::after { content: ""; width: calc(36 * var(--pt)); height: calc(5 * var(--pt)); border-radius: 99px; background: var(--app-surface-2); }
+  .toast { position: absolute; left: calc(12 * var(--pt)); right: calc(12 * var(--pt)); bottom: calc(12 * var(--pt)); z-index: 40; background: #1F2023; color: #fff; border-radius: calc(14 * var(--pt)); padding: calc(4 * var(--pt)) calc(6 * var(--pt)) calc(4 * var(--pt)) calc(16 * var(--pt)); display: flex; align-items: center; gap: calc(12 * var(--pt)); font-size: calc(var(--fs-sub) * var(--u)); animation: toast-in var(--dur-sheet) var(--ease-out); }
+  [data-platform="android"] .toast { border-radius: calc(4 * var(--pt)); }
+  .toast button { margin-left: auto; background: none; border: 0; color: #9DB7FF; font-weight: 600; font-size: inherit; font-family: inherit; min-height: calc(44 * var(--pt)); padding: 0 calc(10 * var(--pt)); cursor: pointer; white-space: nowrap; }
+  @keyframes toast-in { from { transform: translateY(10px); opacity: 0; } }
+  .haptic-tag { position: absolute; z-index: 60; font: 600 10px/1 Inter, sans-serif; padding: 3px 6px; border-radius: 5px; background: #6D28D9; color: #fff; pointer-events: none; animation: hap 900ms ease-out forwards; }
+  @keyframes hap { 0% { opacity: 0 } 15% { opacity: 1 } 80% { opacity: 1 } 100% { opacity: 0 } }
+  .sys-kbd { flex: 0 0 auto; background: #D1D4DA; padding: calc(8 * var(--pt)) calc(3 * var(--pt)) calc(26 * var(--pt)); display: grid; gap: calc(11 * var(--pt)); font-family: inherit; color: #111; }
+  [data-platform="android"] .sys-kbd { background: #E8EAF0; padding-bottom: calc(12 * var(--pt)); }
+  .sys-kbd .r { display: flex; gap: calc(6 * var(--pt)); justify-content: center; }
+  .sys-kbd .k { flex: 1; max-width: calc(34 * var(--pt)); height: calc(42 * var(--pt)); border-radius: calc(5 * var(--pt)); background: #fff; display: grid; place-items: center; font-size: calc(22 * var(--pt)); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+  .sys-kbd .k.w { max-width: none; flex: 1.6; font-size: calc(15 * var(--pt)); background: #ABB0BA; }
+  .sys-kbd .k.space { max-width: none; flex: 5; font-size: calc(15 * var(--pt)); }
+  .sys-kbd.numeric .k { max-width: none; height: calc(46 * var(--pt)); font-size: calc(25 * var(--pt)); }
+
+  body.reduced *, body.reduced *::before, body.reduced *::after { animation-duration: 1ms !important; transition-property: opacity, background-color !important; }
+  @media (max-width: 480px) { header.page h1 { font-size: 19px; } .option { padding: 14px; } }
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>Tên tính năng: các phương án</h1>
+  <p>Một câu: vấn đề cần giải và cách đọc trang. Bấm, vuốt thử trực tiếp trên khung.</p>
+  <div class="controls" role="toolbar" aria-label="Tùy chọn xem">
+    <button type="button" data-set-platform="ios" aria-pressed="true">iOS</button>
+    <button type="button" data-set-platform="android" aria-pressed="false">Android</button>
+    <span class="sep"></span>
+    <button type="button" data-toggle="small" aria-pressed="false">Màn nhỏ</button>
+    <button type="button" data-toggle="big-text" aria-pressed="false">Chữ to</button>
+    <button type="button" data-toggle-theme aria-pressed="false">Tối</button>
+    <button type="button" data-toggle="reduced" aria-pressed="false">Reduce Motion</button>
+    <button type="button" data-toggle="show-thumb" aria-pressed="false">Vùng ngón cái</button>
+    <span class="sep"></span>
+    <button type="button" id="run-qa">Kiểm tra</button>
+  </div>
+</header>
+<div id="qa-report"></div>
+
+<main>
+  <!-- ===== PHƯƠNG ÁN MẪU: xóa và thay bằng phương án thật ===== -->
+  <section class="option" aria-labelledby="opt-example">
+    <span class="tag">Ví dụ</span>
+    <h2 id="opt-example">Danh sách vuốt + sheet chi tiết</h2>
+    <p>Vuốt hàng sang trái để xóa (có hoàn tác); chạm hàng để mở sheet.</p>
+    <div class="phones">
+      <figure class="phone">
+        <div class="device"><div class="screen">
+          <div class="statusbar"><span>9:41</span><span class="cam"></span><span class="sys"></span></div>
+          <div class="content">
+            <div class="large-title">Giao dịch</div>
+            <div class="scroll">
+              <div class="section-h"><span>Hôm nay</span><span>−74.000 đ</span></div>
+              <div class="list" id="demo-list">
+                <div class="row" role="button" tabindex="0"><span class="lead"><span class="ms">restaurant</span></span><div class="main"><div class="t">Cơm tấm sườn</div><div class="s">Ăn uống · 12:10</div></div><span class="trail amount">−45.000&nbsp;đ</span></div>
+                <div class="row" role="button" tabindex="0"><span class="lead"><span class="ms">local_cafe</span></span><div class="main"><div class="t">Cà phê sữa đá</div><div class="s">Đồ uống · 08:45</div></div><span class="trail amount">−29.000&nbsp;đ</span></div>
+              </div>
+            </div>
+            <div class="scrim" id="demo-scrim"></div>
+            <div class="sheet" id="demo-sheet">
+              <div class="handle" aria-label="Kéo để đổi kích thước"></div>
+              <div class="pad stack">
+                <div class="h2">Cơm tấm sườn</div>
+                <div class="sub">Ăn uống · Hôm nay 12:10</div>
+                <div class="hstack"><button class="btn tonal grow"><span class="ms sm">edit</span>Sửa</button><button class="btn ghost grow" id="demo-del">Xóa</button></div>
+              </div>
+            </div>
+            <div class="thumb-zone"></div>
+          </div>
+          <div class="homebar"></div>
+        </div></div>
+        <figcaption>Mặc định</figcaption>
+      </figure>
+    </div>
+    <ul class="points">
+      <li><span class="note">1</span><span>Ghi chú ngắn cho người xem, đặt ngoài khung.</span></li>
+    </ul>
+  </section>
+  <!-- ===== HẾT PHƯƠNG ÁN MẪU ===== -->
+</main>
+
+<script>
+/* ---- QA: bản sao của assets/qa-check.js (chèn tự động, giữ đồng bộ khi sửa) ---- */
+window.__mockQANoAutoRun = true;
+/*QA_CHECK_START*/
+// QA MOCKUP: layout + dấu hiệu "AI slop" (mobile-ux-design skill)
+// Chạy trong trang mockup: công cụ evaluate của trình duyệt, hoặc dán vào DevTools console.
+// Mockup làm từ template đã nhúng sẵn hàm này: gọi Mock.qa() hoặc bấm nút "Kiểm tra" trên trang.
+// Quét mọi khung .screen đang hiển thị, trả về { screens, counts, issues: [{frame, type, el, detail}] }.
+//
+// Loại lỗi (đều nên về 0, trừ khi có lý do và ghi rõ trong đề xuất):
+//   text-clipped    chữ bị cắt trong hộp overflow:hidden (không phải ellipsis có chủ đích)
+//   wrapped-label   nhãn ngắn (≤ 3 từ: nút, chip, số tiền, tab) bị xuống dòng
+//   cut-by-screen   chữ/nút bị mép khung cắt mất một phần (ngoài vùng cuộn)
+//   covered         chữ/nút bị phần tử khác che MỘT PHẦN (va chạm). Lớp bị che hoàn toàn có chủ đích thì bỏ qua
+//   small-target    phần tử bấm được nhỏ hơn 40×40pt (vùng chạm thật nên ≥ 44pt; người lớn tuổi/trẻ em ≥ 48–56)
+//   emoji           emoji dùng trong UI (thường là emoji làm icon). Dùng bộ icon thống nhất
+//   default-font    font của khung là font mặc định trình duyệt (system-ui, Segoe UI, Arial…)
+//   heavy-shadow    bóng đổ blur > 24px, bóng có màu, hoặc text-shadow (glow)
+//   gradient        nền gradient trang trí chiếm diện tích lớn
+//   frame-clipped   (trang, ≥ 1000px) khung điện thoại bị cột phương án cắt mất một phần
+//   text-dense      khung có quá nhiều chữ (mặc định > 70 từ đang hiển thị)
+// Cảnh báo độ rối (tinh gọn). Vượt ngưỡng thì bớt, hoặc ghi rõ vì sao cần:
+//   boxy            quá nhiều phần tử có viền (mặc định > 8): dùng khoảng trắng và nền tonal thay viền
+//   type-noise      quá nhiều cỡ chữ khác nhau (mặc định > 5; nên ≤ 4)
+//   color-noise     quá nhiều màu nhấn khác nhau (mặc định > 3 nhóm sắc độ)
+//   card-soup       ≥ 5 thẻ rộng (nền riêng + bo góc) xếp chồng: dùng danh sách nhóm thay vì mỗi mục một thẻ
+//   chrome-heavy    phần cố định trên + dưới (ngoài status bar/home) chiếm > 40% chiều cao nội dung
+(function () {
+  function mockQA(opts) {
+    opts = opts || {};
+    var minTargetPt = opts.minTarget || 40, deviceWidth = opts.deviceWidth || 390, maxWords = opts.maxWords || 70, maxBoxes = opts.maxBoxes || 8, maxSizes = opts.maxSizes || 5, maxHues = opts.maxHues || 3, maxChrome = opts.maxChrome || 0.4;
+    var issues = [];
+    var screens = Array.prototype.slice.call(document.querySelectorAll(opts.selector || '.screen'));
+    var EMOJI = /\p{Extended_Pictographic}/u;
+    var DEFAULT_FONTS = /^(system-ui|-apple-system|blinkmacsystemfont|segoe ui|arial|helvetica|sans-serif|serif|times new roman|tahoma|verdana)$/i;
+
+    function visible(el) {
+      var s = getComputedStyle(el), r = el.getBoundingClientRect();
+      return s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity) > 0.05 && r.width > 0 && r.height > 0;
+    }
+    function ancestorsVisible(el, stop) {
+      for (var p = el; p && p !== stop; p = p.parentElement) if (parseFloat(getComputedStyle(p).opacity) < 0.05) return false;
+      return true;
+    }
+    function label(el) {
+      var t = (el.innerText || el.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40);
+      var c = typeof el.className === 'string' && el.className.trim() ? '.' + el.className.trim().split(/\s+/).slice(0, 2).join('.') : '';
+      return el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') + c + (t ? ' "' + t + '"' : '');
+    }
+    function ownText(el) {
+      var t = '';
+      for (var i = 0; i < el.childNodes.length; i++) { var n = el.childNodes[i]; if (n.nodeType === 3) t += n.textContent; }
+      return t.trim();
+    }
+    function isIcon(el) { return el.closest('.ms, .material-symbols-rounded, .material-symbols-outlined, .material-icons, [data-icon], svg'); }
+    function isInteractive(el) {
+      return el.matches('button, a[href], input, select, textarea, [role=button], [role=tab], [role=switch], [role=checkbox], [role=radio], [onclick]');
+    }
+    function scrollerOrMoved(el, stop) {
+      for (var p = el.parentElement; p && p !== stop; p = p.parentElement) {
+        var s = getComputedStyle(p);
+        if (/(auto|scroll)/.test(s.overflowX + s.overflowY)) return 'scroll';
+        if (s.transform && s.transform !== 'none') return 'moved';
+      }
+      return '';
+    }
+    function related(a, b) { return a === b || a.contains(b) || b.contains(a); }
+    function rgba(str) { var m = (str || '').match(/rgba?\(([^)]*)\)/); if (!m) return null; var c = m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat); return { r: c[0], g: c[1], b: c[2], a: c.length > 3 ? c[3] : 1 }; }
+    function hueBucket(c) {
+      if (!c || c.a < 0.35) return null;
+      var r = c.r / 255, g = c.g / 255, b = c.b / 255, max = Math.max(r, g, b), min = Math.min(r, g, b), l = (max + min) / 2, d = max - min;
+      var sat = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+      if (sat < 0.3 || l > 0.93 || l < 0.12) return null; // trung tính, gần trắng, gần đen
+      var h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return Math.round(((h * 60 + 360) % 360) / 30); // nhóm 30°
+    }
+    // Phần tử nằm trong vùng cuộn được, bị thanh cố định (ngoài vùng cuộn) che: người dùng cuộn ra được, không phải lỗi
+    function scrollsUnder(el, top) {
+      for (var p = el.parentElement; p; p = p.parentElement) {
+        var cs = getComputedStyle(p);
+        if (/(auto|scroll)/.test(cs.overflowY) && p.scrollHeight > p.clientHeight + 4) return !p.contains(top);
+        if (p.classList && p.classList.contains('screen')) return false;
+      }
+      return false;
+    }
+    // Flex cột / grid: icon xếp trên chữ là chủ đích, chỉ đếm dòng của từng text node.
+    // Flex hàng: các phần tử con rơi xuống hàng mới là lỗi ("0" và "đ" tách hai dòng).
+    // Block/inline: đếm cả cụm.
+    function lineCount(el) {
+      var cs = getComputedStyle(el);
+      if (/(flex|grid)/.test(cs.display)) {
+        var max = 1, walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (var n = walker.nextNode(); n; n = walker.nextNode()) if (n.textContent.trim()) max = Math.max(max, linesOf(n));
+        if (/flex/.test(cs.display) && /^row/.test(cs.flexDirection)) {
+          var tops = [];
+          Array.prototype.forEach.call(el.children, function (c) {
+            var r = c.getBoundingClientRect(); if (!r.width || !r.height) return;
+            if (!tops.some(function (t) { return r.top >= t.top + t.h * 0.6 || r.top + r.height * 0.6 <= t.top ? false : true; })) tops.push({ top: r.top, h: r.height });
+          });
+          max = Math.max(max, tops.length);
+        }
+        return max;
+      }
+      return linesOf(el);
+    }
+    function linesOf(node) {
+      var range = document.createRange(); range.selectNodeContents(node);
+      var rects = Array.prototype.slice.call(range.getClientRects()).filter(function (r) { return r.width > 1; });
+      var tops = [];
+      rects.forEach(function (r) { if (!tops.some(function (t) { return Math.abs(t - r.top) < r.height * 0.5; })) tops.push(r.top); });
+      return tops.length;
+    }
+    function shadowProblem(s) {
+      if (s.textShadow && s.textShadow !== 'none') return 'text-shadow ' + s.textShadow;
+      if (!s.boxShadow || s.boxShadow === 'none') return '';
+      var parts = s.boxShadow.split(/,(?![^(]*\))/);
+      for (var i = 0; i < parts.length; i++) {
+        var p = parts[i];
+        if (/inset/.test(p)) continue;
+        var nums = (p.replace(/rgba?\([^)]*\)/, '').match(/-?[\d.]+px/g) || []).map(parseFloat);
+        var blur = nums[2] || 0, spread = nums[3] || 0;
+        var m = p.match(/rgba?\(([^)]*)\)/), col = m ? m[1].split(',').map(parseFloat) : [0, 0, 0, 1];
+        var a = col.length > 3 ? col[3] : 1;
+        var colored = Math.max(col[0], col[1], col[2]) - Math.min(col[0], col[1], col[2]) > 40 && a > 0.12;
+        if (blur > 24 || spread > 8 || colored) return 'box-shadow ' + p.trim();
+      }
+      return '';
+    }
+
+    // Cấp trang (màn hình máy tính): khung điện thoại bị cột phương án cắt mất, người xem thấy nửa khung
+    if (innerWidth >= 1000) screens.forEach(function (screen) {
+      var dev = screen.closest('.device') || screen, sc = dev.parentElement && dev.closest('.phones');
+      if (!sc || !visible(screen)) return;
+      var d = dev.getBoundingClientRect(), c = sc.getBoundingClientRect();
+      if (d.right > c.right + 1 || d.left < c.left - 1) {
+        var cap = screen.closest('figure') && screen.closest('figure').querySelector('figcaption');
+        issues.push({ frame: cap ? cap.innerText.trim() : '', type: 'frame-clipped', el: '', detail: 'khung bị cắt trên trang ở độ rộng ' + innerWidth + 'px: cho mỗi phương án một hàng hoặc thu nhỏ khung' });
+      }
+    });
+    screens.forEach(function (screen, si) {
+      if (!visible(screen)) return;
+      var fig = screen.closest('figure'), cap = fig && fig.querySelector('figcaption');
+      var opt = screen.closest('section'), head = opt && opt.querySelector('h2');
+      var frame = (head ? head.innerText.trim() + ' / ' : '') + (cap ? cap.innerText.trim() : 'khung ' + (si + 1));
+      screen.scrollIntoView({ block: 'center', inline: 'center' });
+      var sr = screen.getBoundingClientRect();
+      var minTarget = minTargetPt * sr.width / deviceWidth;
+      var push = function (type, el, detail) { issues.push({ frame: frame, type: type, el: el ? label(el) : '', detail: detail || '' }); };
+
+      var fam = (getComputedStyle(screen).fontFamily.split(',')[0] || '').replace(/["']/g, '').trim();
+      if (DEFAULT_FONTS.test(fam)) push('default-font', null, 'font đầu tiên: ' + fam);
+      else if (document.fonts && document.fonts.check && !document.fonts.check('16px "' + fam + '"')) push('default-font', null, 'font "' + fam + '" chưa tải được, đang hiển thị font dự phòng');
+
+      var words = 0, boxes = 0, sizes = {}, hues = {};
+      var els = Array.prototype.slice.call(screen.querySelectorAll('*')).filter(function (el) {
+        if (!visible(el) || !ancestorsVisible(el, screen) || el.closest('.statusbar, .haptic-tag')) return false;
+        var r = el.getBoundingClientRect();
+        return r.right > sr.left && r.left < sr.right && r.bottom > sr.top && r.top < sr.bottom;
+      });
+      els.forEach(function (el) {
+        var r = el.getBoundingClientRect(), s = getComputedStyle(el);
+        var own = ownText(el), inter = isInteractive(el), icon = isIcon(el), ctx = scrollerOrMoved(el, screen);
+        if (own && !icon) words += own.split(/\s+/).filter(Boolean).length;
+        var bw = ['Top', 'Right', 'Bottom', 'Left'].filter(function (sd) { var c = rgba(s['border' + sd + 'Color']); return parseFloat(s['border' + sd + 'Width']) >= 1 && c && c.a > 0.15 && s['border' + sd + 'Style'] !== 'none'; }).length;
+        if (bw >= 3 && r.width > 24 && r.height > 20) boxes++;
+        if (own && !icon) sizes[Math.round(parseFloat(s.fontSize))] = 1;
+        var hb = own && !icon ? hueBucket(rgba(s.color)) : null; if (hb !== null) hues[hb] = 1;
+        var bb = r.width * r.height > 400 ? hueBucket(rgba(s.backgroundColor)) : null; if (bb !== null) hues[bb] = 1;
+
+        if (own && !icon && EMOJI.test(own)) push('emoji', el, own.match(EMOJI)[0]);
+        var sh = shadowProblem(s); if (sh) push('heavy-shadow', el, sh);
+        if (/gradient/.test(s.backgroundImage) && r.width * r.height > sr.width * sr.height * 0.1) push('gradient', el, s.backgroundImage.slice(0, 60));
+
+        if (own && !icon && /(hidden|clip)/.test(s.overflow + s.overflowX + s.overflowY) && s.textOverflow !== 'ellipsis' &&
+            (s.webkitLineClamp === 'none' || !s.webkitLineClamp) && (el.scrollWidth > el.clientWidth + 1 || el.scrollHeight > el.clientHeight + 2)) {
+          push('text-clipped', el, el.scrollWidth + 'x' + el.scrollHeight + ' trong hộp ' + el.clientWidth + 'x' + el.clientHeight);
+        }
+        var full = (el.innerText || '').trim();
+        var inlineInText = s.display === 'inline' && el.parentElement && ownText(el.parentElement).length > 0;
+        if (full && !icon && !inlineInText && full.split(/\s+/).length <= 3 && full.length <= 24 && !el.querySelector('div, p, li, section, br') &&
+            (own || inter) && lineCount(el) > 1) {
+          push('wrapped-label', el, lineCount(el) + ' dòng');
+        }
+        if ((own || inter) && !ctx && (r.left < sr.left - 1 || r.right > sr.right + 1 || r.bottom > sr.bottom + 1 || r.top < sr.top - 1)) {
+          push('cut-by-screen', el, 'vượt mép khung');
+        }
+        // Che một phần = va chạm thật. Che toàn bộ (lớp nằm dưới có chủ đích, vd. nút sau hàng vuốt) thì bỏ qua.
+        if ((own || inter) && ctx !== 'moved') {
+          var pts = [[0.5, 0.5], [0.15, 0.2], [0.85, 0.2], [0.15, 0.8], [0.85, 0.8]], hit = 0, by = null, checked = 0;
+          pts.forEach(function (f) {
+            var x = r.left + r.width * f[0], y = r.top + r.height * f[1];
+            if (x < sr.left || x > sr.right || y < sr.top || y > sr.bottom || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return;
+            checked++;
+            var top = document.elementFromPoint(x, y);
+            if (top && !related(top, el) && screen.contains(top) && !scrollsUnder(el, top)) { hit++; by = by || top; }
+          });
+          if (hit > 0 && hit < checked) push('covered', el, 'bị che một phần (' + hit + '/' + checked + ' điểm) bởi ' + label(by));
+        }
+        if (inter && !ctx && (r.width < minTarget - 0.5 || r.height < minTarget - 0.5)) {
+          push('small-target', el, '≈' + Math.round(r.width * deviceWidth / sr.width) + 'x' + Math.round(r.height * deviceWidth / sr.width) + 'pt');
+        }
+      });
+      if (words > maxWords) push('text-dense', null, words + ' từ đang hiển thị (ngưỡng ' + maxWords + ')');
+      if (boxes > maxBoxes) push('boxy', null, boxes + ' phần tử có viền (ngưỡng ' + maxBoxes + ')');
+      var nSizes = Object.keys(sizes).length; if (nSizes > maxSizes) push('type-noise', null, nSizes + ' cỡ chữ: ' + Object.keys(sizes).sort(function (a, b) { return a - b; }).join('/') + 'px');
+      var nHues = Object.keys(hues).length; if (nHues > maxHues) push('color-noise', null, nHues + ' nhóm màu nhấn');
+      // Chồng thẻ: trong một khối, ≥ 5 con rộng (≥ 75% khung) có nền khác nền app và bo góc, xếp dọc
+      Array.prototype.forEach.call(screen.querySelectorAll('*'), function (box) {
+        if (box.children.length < 5 || !visible(box)) return;
+        var cards = Array.prototype.filter.call(box.children, function (c) {
+          if (!visible(c)) return false;
+          var cs = getComputedStyle(c), rc = c.getBoundingClientRect(), bg = rgba(cs.backgroundColor);
+          return rc.width >= sr.width * 0.75 && bg && bg.a > 0.2 && cs.backgroundColor !== getComputedStyle(screen).backgroundColor && parseFloat(cs.borderTopLeftRadius) >= 6;
+        });
+        if (cards.length >= 5) push('card-soup', box, cards.length + ' thẻ rộng xếp chồng');
+      });
+      var content = screen.querySelector('.content'), sc = content && content.querySelector('.scroll');
+      if (content && sc) {
+        var ch = content.getBoundingClientRect().height, scr = sc.getBoundingClientRect(), fixed = 0;
+        Array.prototype.forEach.call(content.children, function (c) {
+          var cs = getComputedStyle(c); if (c === sc || cs.position === 'absolute' || cs.position === 'fixed' || !visible(c)) return;
+          fixed += c.getBoundingClientRect().height;
+        });
+        if (ch > 0 && fixed / ch > maxChrome) push('chrome-heavy', null, Math.round(fixed / ch * 100) + '% chiều cao là phần cố định (ngưỡng ' + Math.round(maxChrome * 100) + '%)');
+      }
+    });
+    var counts = {};
+    issues.forEach(function (i) { counts[i.type] = (counts[i.type] || 0) + 1; });
+    return { screens: screens.length, counts: counts, issues: issues.slice(0, opts.limit || 120) };
+  }
+  if (typeof window !== 'undefined') window.mockQA = mockQA;
+  return typeof module === 'undefined' && typeof window !== 'undefined' && !window.__mockQANoAutoRun ? mockQA() : undefined;
+})();
+/*QA_CHECK_END*/
+
+const Mock = (() => {
+  const reduced = () => document.body.classList.contains('reduced');
+  const dur = (name) => parseInt(getComputedStyle(document.documentElement).getPropertyValue(name)) || 280;
+
+  function swipe(el, { axis = 'x', threshold = 0.35, onCommit, onMove, flyOut = true, rotate = false } = {}) {
+    let start = null, last = null;
+    el.style.touchAction = axis === 'x' ? 'pan-y' : 'pan-x';
+    el.addEventListener('pointerdown', (e) => { start = { x: e.clientX, y: e.clientY, t: performance.now() }; last = start; el.setPointerCapture(e.pointerId); el.style.transition = 'none'; });
+    el.addEventListener('pointermove', (e) => {
+      if (!start) return;
+      const d = axis === 'x' ? e.clientX - start.x : e.clientY - start.y;
+      el.style.transform = axis === 'x' ? `translateX(${d}px)${rotate ? ` rotate(${d / 30}deg)` : ''}` : `translateY(${d}px)`;
+      last = { x: e.clientX, y: e.clientY, t: performance.now() };
+      onMove && onMove(d / (axis === 'x' ? el.offsetWidth : el.offsetHeight));
+    });
+    const end = () => {
+      if (!start) return;
+      const d = axis === 'x' ? last.x - start.x : last.y - start.y, size = axis === 'x' ? el.offsetWidth : el.offsetHeight;
+      const v = Math.abs(d) / Math.max(1, last.t - start.t); start = null;
+      el.style.transition = reduced() ? `opacity ${dur('--dur-sheet')}ms` : `transform ${dur('--dur-sheet')}ms var(--ease-out), opacity ${dur('--dur-sheet')}ms`;
+      if (Math.abs(d) > 6 && (Math.abs(d) > size * threshold || v > 0.6)) {
+        const dir = axis === 'x' ? (d > 0 ? 'right' : 'left') : (d > 0 ? 'down' : 'up');
+        if (flyOut) { el.style.transform = axis === 'x' ? `translateX(${Math.sign(d) * size * 1.2}px)` : `translateY(${Math.sign(d) * size * 1.2}px)`; el.style.opacity = '0'; }
+        onCommit && onCommit(dir);
+      } else { el.style.transform = ''; onMove && onMove(0); }
+    };
+    el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+    return { reset() { el.style.transition = 'none'; el.style.transform = ''; el.style.opacity = ''; } };
+  }
+
+  function sheet(el, { snaps = [0, 0.5, 0.9], initial = 0, scrim = null } = {}) {
+    const host = el.parentElement, handle = el.querySelector('.handle') || el;
+    let idx = initial, startY = null, startH = 0;
+    const H = () => host.clientHeight;
+    const place = (h, animate) => {
+      el.style.transition = animate && !reduced() ? `transform ${dur('--dur-sheet')}ms var(--ease-out)` : 'none';
+      el.style.transform = `translateY(${H() - h}px)`;
+      if (scrim) scrim.classList.toggle('on', h > 4);
+    };
+    const snapTo = (i, animate = true) => { idx = Math.max(0, Math.min(snaps.length - 1, i)); place(snaps[idx] * H(), animate); };
+    handle.addEventListener('pointerdown', (e) => { startY = e.clientY; startH = snaps[idx] * H(); handle.setPointerCapture(e.pointerId); });
+    handle.addEventListener('pointermove', (e) => { if (startY !== null) place(Math.max(0, startH + startY - e.clientY), false); });
+    const end = (e) => {
+      if (startY === null) return;
+      const h = startH + startY - e.clientY; startY = null;
+      if (Math.abs(h - startH) < 4) return snapTo(idx + 1 < snaps.length ? idx + 1 : 0);
+      let best = 0; snaps.forEach((s, i) => { if (Math.abs(s * H() - h) < Math.abs(snaps[best] * H() - h)) best = i; });
+      snapTo(best);
+    };
+    handle.addEventListener('pointerup', end); handle.addEventListener('pointercancel', end);
+    if (scrim) scrim.addEventListener('click', () => snapTo(0));
+    requestAnimationFrame(() => snapTo(idx, false));
+    // Khung đổi kích thước (đổi nền tảng, Màn nhỏ, Chữ to) thì đặt lại sheet, tránh tay nắm lòi lên che nút
+    if (window.ResizeObserver) new ResizeObserver(() => { if (startY === null) snapTo(idx, false); }).observe(host);
+    return { snapTo, get index() { return idx; } };
+  }
+
+  function toast(screenEl, text, { action, onAction, ms = 4000 } = {}) {
+    const host = screenEl.querySelector('.content') || screenEl;
+    host.querySelectorAll('.toast').forEach((t) => t.remove());
+    const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status');
+    const span = document.createElement('span'); span.textContent = text; t.appendChild(span);
+    if (action) { const b = document.createElement('button'); b.textContent = action; b.onclick = () => { t.remove(); onAction && onAction(); }; t.appendChild(b); }
+    host.appendChild(t); setTimeout(() => t.remove(), ms);
+    return t;
+  }
+
+  function haptic(el, kind = 'light') {
+    const screen = el.closest('.screen'); if (!screen) return;
+    const r = el.getBoundingClientRect(), s = screen.getBoundingClientRect();
+    const tag = document.createElement('div'); tag.className = 'haptic-tag'; tag.textContent = 'haptic · ' + kind;
+    tag.style.left = Math.max(4, r.left - s.left + r.width / 2 - 34) + 'px'; tag.style.top = Math.max(4, r.top - s.top - 20) + 'px';
+    screen.appendChild(tag); setTimeout(() => tag.remove(), 950);
+  }
+
+  // Bàn phím hệ thống giả lập: để thấy diện tích bị chiếm và vị trí nút; không gõ được
+  function keyboard(container, type = 'text') {
+    const k = document.createElement('div'); k.className = 'sys-kbd ' + type; k.setAttribute('aria-hidden', 'true');
+    const rows = type === 'numeric' ? [['1', '2', '3'], ['4', '5', '6'], ['7', '8', '9'], ['', '0', '⌫']]
+      : [['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'], ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'], ['⇧', 'z', 'x', 'c', 'v', 'b', 'n', 'm', '⌫'], ['123', 'dấu cách', 'Xong']];
+    rows.forEach((r) => {
+      const row = document.createElement('div'); row.className = 'r';
+      r.forEach((c) => { const b = document.createElement('span'); b.className = 'k' + (c === 'dấu cách' ? ' space' : (c.length > 1 || '⇧⌫'.includes(c)) && type === 'text' ? ' w' : ''); b.textContent = c; row.appendChild(b); });
+      k.appendChild(row);
+    });
+    container.appendChild(k); return k;
+  }
+
+  const qa = (opts) => window.mockQA ? window.mockQA(opts) : { error: 'thiếu qa-check' };
+  return { swipe, sheet, toast, haptic, keyboard, reduced, qa };
+})();
+
+/* ---- Thanh trạng thái SVG theo nền tảng ---- */
+const SYS = {
+  ios: '<svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>'
+     + '<svg viewBox="0 0 16 12"><path d="M8 2.2c2.4 0 4.6.9 6.2 2.5l1.2-1.2A10.4 10.4 0 0 0 8 .5 10.4 10.4 0 0 0 .6 3.5l1.2 1.2A8.7 8.7 0 0 1 8 2.2Zm0 3.4c1.5 0 2.9.6 3.9 1.6l1.2-1.2A7.2 7.2 0 0 0 8 3.9 7.2 7.2 0 0 0 2.9 6l1.2 1.2c1-1 2.4-1.6 3.9-1.6Zm0 3.4c.6 0 1.2.2 1.6.7L8 11.4 6.4 9.7c.4-.5 1-.7 1.6-.7Z"/></svg>'
+     + '<svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="23" height="11" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2"/><rect x="24.5" y="4" width="1.8" height="4" rx=".9" opacity=".4"/></svg>',
+  android: '<svg viewBox="0 0 16 12"><path d="M8 11.5 0 3.3A11.4 11.4 0 0 1 8 0c3 0 5.8 1.2 8 3.3L8 11.5Z"/></svg>'
+     + '<svg viewBox="0 0 12 12"><path d="M12 0v12H0L12 0Z"/></svg>'
+     + '<svg viewBox="0 0 8 13"><rect x="2.5" y="0" width="3" height="1.5" rx=".5"/><rect x="0" y="1.5" width="8" height="11.5" rx="1.5"/></svg>'
+};
+function paintStatusbars() {
+  const p = document.documentElement.dataset.platform;
+  document.querySelectorAll('.statusbar .sys').forEach((el) => { el.innerHTML = SYS[p]; });
+}
+
+/* ---- Điều khiển trang ---- */
+document.documentElement.dataset.platform = 'ios';
+paintStatusbars();
+document.querySelectorAll('[data-set-platform]').forEach((b) => b.addEventListener('click', () => {
+  document.documentElement.dataset.platform = b.dataset.setPlatform;
+  document.querySelectorAll('[data-set-platform]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  paintStatusbars();
+}));
+document.querySelectorAll('[data-toggle]').forEach((b) => b.addEventListener('click', () => {
+  const on = document.body.classList.toggle(b.dataset.toggle); b.setAttribute('aria-pressed', String(on));
+}));
+const themeBtn = document.querySelector('[data-toggle-theme]');
+themeBtn && themeBtn.addEventListener('click', () => {
+  const on = document.documentElement.dataset.appTheme !== 'dark';
+  document.documentElement.dataset.appTheme = on ? 'dark' : 'light'; themeBtn.setAttribute('aria-pressed', String(on));
+});
+try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.querySelector('[data-toggle="reduced"]').click(); } catch (e) {}
+document.getElementById('run-qa').addEventListener('click', async () => {
+  try { await document.fonts.ready; } catch (e) {}
+  const r = Mock.qa(); const box = document.getElementById('qa-report');
+  const lines = (r.issues || []).map((i) => `• [${i.type}] ${i.frame} | ${i.el} ${i.detail}`);
+  box.innerHTML = '<pre></pre>';
+  box.firstChild.textContent = lines.length ? `${lines.length} vấn đề ${JSON.stringify(r.counts)}\n` + lines.join('\n') : `Không có vấn đề (${r.screens} khung).`;
+});
+
+/* ===== Tương tác của phương án mẫu: xóa cùng phương án mẫu ===== */
+(() => {
+  const list = document.getElementById('demo-list'); if (!list) return;
+  const screen = list.closest('.screen');
+  const sh = Mock.sheet(document.getElementById('demo-sheet'), { snaps: [0, 0.42, 0.88], scrim: document.getElementById('demo-scrim') });
+  list.querySelectorAll('.row').forEach((row) => {
+    let moved = false;
+    const s = Mock.swipe(row, { threshold: 0.4, onMove: (f) => { moved = moved || Math.abs(f) > 0.03; }, onCommit(dir) {
+      if (dir !== 'left') return s.reset();
+      Mock.haptic(row, 'medium');
+      Mock.toast(screen, 'Đã xóa giao dịch', { action: 'Hoàn tác', onAction: () => s.reset() });
+    } });
+    row.addEventListener('click', () => { if (!moved) sh.snapTo(1); moved = false; }); // chạm = cách thay thế cho vuốt
+  });
+  document.getElementById('demo-del').onclick = () => { sh.snapTo(0); Mock.toast(screen, 'Đã xóa giao dịch', { action: 'Hoàn tác' }); };
+})();
+</script>
+</body>
+</html>

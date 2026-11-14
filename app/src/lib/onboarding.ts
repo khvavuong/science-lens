@@ -1,6 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { createContext } from 'react';
 
 const KEY = 'lumoslab.onboarding.v1';
+
+export const OnboardingSeenContext = createContext({ seen: true, finishOnboarding: () => {} });
 
 export async function hasSeenOnboarding() {
   try {

@@ -17,7 +17,7 @@ Tài liệu này ghi lại nhận diện xanh dương và kem vàng đã duyệt
 | --- | --- | --- | --- |
 | Thương hiệu | `brand` | `#1E419D` | Nút chính, mốc đã hoàn thành, điều khiển đang hoạt động |
 | Nút chính khi nhấn | `brandPressed` | `#17347F` | Phản hồi nhấn, chữ trắng |
-| Xanh nhạt | `brandSoft` | `#EBF0FC` | Nền icon và phản hồi nhấn trên thanh điều hướng Trang chủ |
+| Xanh nhạt | `brandSoft` | `#EBF0FC` | Nền icon và phản hồi nhấn trên thanh điều hướng |
 | Xanh navy | `navy` | `#0F2452` | Tiêu đề, chữ trên nền vàng, khối câu hỏi bí ẩn |
 | Lựa chọn trên nền tối | `navySoft` | `#22396E` | Nền lựa chọn chưa chọn trong câu hỏi bí ẩn |
 | Nền kem | `bg`, `bgAlt` | `#FCF9F2`, `#F9F2E5` | Nền màn hình và vùng nội dung phụ |
@@ -53,7 +53,7 @@ Căn trái phần giải thích và câu hỏi để dễ dò dòng. Có thể c
 
 - Dùng lưới 4/8 dp, với các khoảng cách mặc định **4, 8, 16, 24, 32 dp**. Dùng 24 dp cho lề ngang chuẩn và 16 dp giữa các nhóm có liên quan.
 - Thẻ bo góc **16–24 dp**, vùng chạm tối thiểu **48 × 48 dp**. Dùng icon đi cùng nhãn khi hành động hoặc trạng thái có thể khó đoán. Nút chỉ có icon cần nhãn truy cập bằng tiếng Việt.
-- Mỗi màn có một nút chính. Đặt nút ở nửa dưới trong vùng dễ chạm và chừa khoảng an toàn của thiết bị. Nội dung dài được cuộn và không che nút. Thanh điều hướng dưới, nếu có, thuộc Trang chủ.
+- Mỗi màn có một nút chính. Đặt nút ở nửa dưới trong vùng dễ chạm và chừa khoảng an toàn của thiết bị. Nội dung dài được cuộn và không che nút. Thanh điều hướng nằm dưới nội dung từ Trang chủ đến các màn khám phá. Mục đang chọn có nền tròn và chấm vàng ở các nút bên, hoặc viền vàng ở nút camera. Vuốt sang phải từ mép trái hoặc vùng dưới bên trái để quay lại. Trong Câu chuyện, vuốt từ mép trái để quay lại và vuốt trong vùng ảnh để đổi cảnh.
 - Giữ các trạng thái nút nhất quán. Nút chính nền xanh chữ trắng, nút phụ nền sáng chữ xanh hoặc navy. Khi đang xử lý, hiển thị tên công việc thực tế, ví dụ “Đang vẽ cảnh đầu tiên…”.
 - Dùng chuyển động ngắn để phản hồi thao tác. Token hiện có là **150 ms** cho nhấn, **280 ms** cho bảng trượt và **420 ms** cho chuyển cảnh. Khi bật Giảm chuyển động, ưu tiên chuyển mờ và tắt hiệu ứng phóng ảnh.
 
@@ -68,14 +68,15 @@ Phong cách tranh sách khoa học thiếu nhi 2.5D. Ưu tiên đồ vật quen 
 | Màn hình | Bố cục và điểm nhấn |
 | --- | --- |
 | Khởi động | Logo chữ lumoslens ở giữa trên nền kem. Các nét chữ hiện lần lượt từ trái sang phải. Một cầu nối mềm xuất hiện ngắn giữa «lumos» và «lab». Khi bật Giảm chuyển động, logo đứng yên. |
-| Onboarding | Lumo cyan dẫn ba bước làm quen, khám phá và quét thử. Ở màn chào, Lumo nghiêng sang trái, ló nửa thân trên từ mép phải, vẫy nhẹ và chớp mắt một lần. Màn cuối đặt khung quét con quay ở giữa, Lumo ở góc dưới bên phải và lời mời khám phá bên dưới. Vuốt ngang, bấm **Tiếp tục** hoặc **Quay lại** để đổi bước. Thanh tiến độ ba đoạn nằm ngay trên nút chính màu xanh dương. **Bỏ qua** mở Trang chủ và **Quét vật thể đầu tiên** mở màn Quét. App ghi nhớ lựa chọn trên thiết bị. |
-| Trang chủ | Logo ở trên, tiêu đề giới thiệu và minh họa. Thanh pill trắng ở đáy có **Khám phá**, **Bản đồ**, nút camera xanh lớn chỉ có icon, **Thử thách** và **Xếp hạng**. Bản đồ và Thử thách mở màn “Sắp ra mắt”. |
+| Onboarding | Ba bước làm quen, khám phá và quét thử. Ở màn chào, Lumo nghiêng sang trái, ló nửa thân trên từ mép phải, vẫy nhẹ và chớp mắt một lần. Màn cuối hiển thị hồ sơ vật thể chưa nhận diện với bóng 2D navy và dấu hỏi vàng. Hồ sơ nảy nhẹ khi mở, sau đó tia vàng quét một lượt. Khi bật Giảm chuyển động, hồ sơ hiển thị tĩnh. Vuốt ngang, bấm **Tiếp tục** hoặc **Quay lại** để đổi bước. Thanh tiến độ ba đoạn nằm ngay trên nút chính màu xanh dương. **Bỏ qua** mở Trang chủ và **Quét vật thể đầu tiên** mở màn Quét. App ghi nhớ lựa chọn trên thiết bị. |
+| Trang chủ | Logo ở trên, tiêu đề giới thiệu và minh họa. Thanh pill trắng ở đáy có **Khám phá**, **Bản đồ**, nút camera xanh lớn chỉ có icon, **Thử thách** và **Xếp hạng**. Bản đồ mở màn “Sắp ra mắt”. Thử thách mở Săn đồ vật. |
 | Quét vật thể | Ưu tiên ảnh hoặc khung camera. Đặt điều khiển và thẻ kết quả ở phía dưới. Cho chọn ảnh từ thư viện và sửa tên đồ vật khi cần. |
 | Mở đầu (Prelude) | Hiển thị ảnh đồ vật, tiêu đề truyện, câu hỏi bí ẩn trên nền navy và các mốc chuẩn bị. Nút **Vào câu chuyện** mở khi cảnh đầu sẵn sàng hoặc sau mốc chờ 25 giây tính từ khi có nội dung truyện. |
 | Câu chuyện và Hành trình | Cảnh dọc toàn màn hình, phụ đề dễ đọc ở dưới. Có nút đổi cảnh bên cạnh thao tác vuốt. Mở Hành trình qua tay nắm có nhãn, dùng Đường ánh sáng để phân biệt mốc đã xem, đang xem và bị khóa. |
 | Quiz | Mỗi màn một câu, các đáp án xếp dọc. Phản hồi đúng hoặc sai dùng icon, chữ và màu, kèm lời giải thích. |
 | Hoàn thành | Hiện huy hiệu, kết quả và một khái niệm khoa học vừa học. Nút chính mời khám phá đồ vật khác. |
-| Kho khám phá và Thành tích | Dùng thẻ sáng, tiêu đề rõ và trạng thái trống có lời hướng dẫn ngắn. Phân biệt nội dung đã có và huy hiệu chưa nhận bằng cả chữ và hình. |
+| Kho khám phá | Dùng thẻ sáng, tiêu đề rõ và trạng thái trống có lời hướng dẫn ngắn. |
+| Bảng xếp hạng | Hiện Top 30 khám phá ngay dưới tiêu đề, với bục ba hạng đầu và danh sách từ hạng 4 đến 30. |
 
 ## Kiểm tra trước khi duyệt giao diện
 

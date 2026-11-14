@@ -5,11 +5,20 @@ import { colors, font } from '@/theme';
 /**
  * "Đường ánh sáng": motif chính của giao diện v2.
  * done = xanh brand + dấu tích, current = vàng Lumen (đang sáng), todo = vòng rỗng, locked = ổ khóa.
+ * missed = đã làm nhưng chưa đúng (câu đố): nền kem đặc + chấm trung tính, cố ý không dùng dấu X đỏ.
+ * Nơi dùng `missed` phải nói rõ trạng thái bằng chữ qua accessibilityLabel.
  */
-export type NodeState = 'done' | 'current' | 'todo' | 'locked' | 'loading' | 'skipped';
+export type NodeState = 'done' | 'current' | 'todo' | 'locked' | 'loading' | 'skipped' | 'missed';
 
 export function TrailNode({ state, size = 26, label }: { state: NodeState; size?: number; label?: string }) {
   const r = size / 2;
+  if (state === 'missed') {
+    return (
+      <View style={[styles.node, { width: size, height: size, borderRadius: r, backgroundColor: colors.surface, borderWidth: 2, borderColor: colors.trail }]}>
+        <View style={{ width: size * 0.3, height: size * 0.3, borderRadius: size, backgroundColor: colors.trail }} />
+      </View>
+    );
+  }
   if (state === 'done') {
     return (
       <View style={[styles.node, { width: size, height: size, borderRadius: r, backgroundColor: colors.brand }]}>
@@ -47,7 +56,7 @@ export function HorizontalTrail({ states, size = 26, numbered }: { states: NodeS
       {states.map((s, i) => (
         <View key={i} style={[styles.row, i < states.length - 1 && { flex: 1 }]}>
           <TrailNode state={s} size={size} label={numbered ? String(i + 1) : undefined} />
-          {i < states.length - 1 && <View style={[styles.hLine, s === 'done' && { borderColor: colors.brand, borderStyle: 'solid' }]} />}
+          {i < states.length - 1 && <View style={[styles.hLine, lineAfter(s)]} />}
         </View>
       ))}
     </View>
@@ -60,14 +69,23 @@ export function VerticalStep({ state, last, children, size = 24 }: { state: Node
     <View style={styles.vRow}>
       <View style={{ width: size + 8, alignItems: 'center' }}>
         <TrailNode state={state} size={size} />
-        {!last && <View style={[styles.vLine, state === 'done' && { borderColor: colors.brand, borderStyle: 'solid' }]} />}
+        {!last && <View style={[styles.vLine, lineAfter(state)]} />}
       </View>
       <View style={{ flex: 1, paddingBottom: last ? 0 : 14 }}>{children}</View>
     </View>
   );
 }
 
+/** Đoạn nối sau một mốc: đã qua thì nét liền (xong = xanh brand, chưa đúng = màu trail), chưa qua thì nét đứt. */
+function lineAfter(s: NodeState) {
+  if (s === 'done') return styles.lineDone;
+  if (s === 'missed') return styles.linePassed;
+  return null;
+}
+
 const styles = StyleSheet.create({
+  lineDone: { borderColor: colors.brand, borderStyle: 'solid' },
+  linePassed: { borderStyle: 'solid' },
   node: { alignItems: 'center', justifyContent: 'center' },
   num: { fontFamily: font.black, color: colors.navy },
   row: { flexDirection: 'row', alignItems: 'center' },

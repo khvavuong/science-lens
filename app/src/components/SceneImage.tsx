@@ -45,16 +45,26 @@ export function SceneImage({ uri, fallbackUri, active, seed = 0 }: {
     <View style={StyleSheet.absoluteFill}>
       <LinearGradient colors={[colors.bgAlt, colors.surface]} style={StyleSheet.absoluteFill} />
       {src ? (
-        <Animated.View style={[StyleSheet.absoluteFill, kenBurns]}>
-          <Image
-            source={{ uri: src }}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            contentPosition="top center"
-            transition={reduced ? 0 : 400}
-            accessibilityIgnoresInvertColors
+        <>
+          <Animated.View style={[StyleSheet.absoluteFill, kenBurns]}>
+            <Image
+              source={{ uri: src }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              contentPosition="top center"
+              transition={reduced ? 0 : 400}
+              accessibilityIgnoresInvertColors
+            />
+          </Animated.View>
+          {/* Ảnh AI hay có dải màu phẳng ở đáy (vùng chừa cho phụ đề): phủ gradient tối cố định
+              (không chạy theo Ken Burns) để đường cắt hòa vào nền navy của màn truyện. */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={[colors.mediaShade.clear, colors.mediaShade.top, colors.mediaShade.bottom]}
+            locations={[0, 0.45, 1]}
+            style={styles.bottomFade}
           />
-        </Animated.View>
+        </>
       ) : (
         <View style={styles.center}>
           <Ionicons name="sparkles-outline" size={72} color={colors.brand} style={{ opacity: 0.35 }} />
@@ -66,4 +76,5 @@ export function SceneImage({ uri, fallbackUri, active, seed = 0 }: {
 
 const styles = StyleSheet.create({
   center: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center' },
+  bottomFade: { position: 'absolute', left: 0, right: 0, bottom: 0, height: '40%' },
 });

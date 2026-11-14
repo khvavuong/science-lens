@@ -67,18 +67,37 @@ async function req<T>(path: string, init?: RequestInit & { timeoutMs?: number })
     const res = await fetch(`${API_URL}${path}`, {
       ...init,
       signal: ctrl.signal,
-      headers: { 'content-type': 'application/json', ...(process.env.EXPO_PUBLIC_API_TOKEN ? { authorization: `Bearer ${process.env.EXPO_PUBLIC_API_TOKEN}` } : {}), ...(init?.headers ?? {}) },
+      headers: { ...(init?.body instanceof FormData ? {} : { 'content-type': 'application/json' }), ...(process.env.EXPO_PUBLIC_API_TOKEN ? { authorization: `Bearer ${process.env.EXPO_PUBLIC_API_TOKEN}` } : {}), ...(init?.headers ?? {}) },
     });
     const body = await res.json().catch(() => ({}));
-    if (!res.ok) throw new ApiError(body?.error ?? `Lỗi máy chủ (${res.status})`);
+    if (!res.ok) {
+      if (res.status === 413 && typeof body?.message !== 'string') throw new ApiError('Tệp quá lớn. Em chọn tệp nhỏ hơn nhé.');
+      throw new ApiError(body?.message ?? body?.error ?? `Lỗi máy chủ (${res.status})`);
+    }
     return body as T;
   } catch (e: any) {
     if (e instanceof ApiError) throw e;
-    throw new ApiError(e?.name === 'AbortError' ? 'Kết nối quá lâu. Vui lòng thử lại.' : 'Không kết nối được máy chủ. Kiểm tra mạng nhé.');
+    // expo/fetch (native) báo hết giờ bằng FetchError, không phải AbortError: dựa vào signal.
+    if (ctrl.signal.aborted) throw new ApiError('Kết nối quá lâu. Vui lòng thử lại.');
+    // Lỗi mạng: TypeError (web, fetch của RN) hoặc FetchError "fetch failed: …" (expo/fetch).
+    if (e instanceof TypeError || String(e?.message).startsWith('fetch failed')) {
+      throw new ApiError('Không kết nối được máy chủ. Kiểm tra mạng nhé.');
+    }
+    // Lỗi trong app trước khi gửi (vd. dựng body hỏng): không đổ cho mạng.
+    console.warn(`[api] ${path}`, e);
+    throw new ApiError('Ứng dụng chưa gửi được yêu cầu. Em thử lại nhé.');
   } finally {
     clearTimeout(timer);
   }
 }
+
+export type HuntVerdict = 'accepted' | 'needs_detail' | 'change_object' | 'retake_photo';
+export type HuntResult = { itemId: string; revision: number; verdict: HuntVerdict; feedback: string; objectLabel?: string };
+
+export const huntApi = {
+  evaluate: (body: FormData) => req<HuntResult>('/api/hunt/evaluate', { method: 'POST', body, timeoutMs: 45_000 }),
+  transcribe: (body: FormData) => req<{ transcript: string }>('/api/hunt/transcribe', { method: 'POST', body, timeoutMs: 50_000 }),
+};
 
 export const api = {
   recognize: (imageBase64: string) =>

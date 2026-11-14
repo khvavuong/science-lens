@@ -55,8 +55,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": false,
-          "recordAudioAndroid": false
+          "microphonePermission": "lumoslens cần micro khi em chọn ghi âm lời giải thích cho thử thách.",
+          "recordAudioAndroid": true
         }
       ],
       "expo-image",

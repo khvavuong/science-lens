@@ -42,7 +42,7 @@ test('recap deduplicates requests, awaits file write, and retries failures', asy
 
 test('card text keeps Vietnamese accents and truncates to the available lines', () => {
  const { cardLines } = load('components/DiscoveryShare.tsx', {
-  'expo-file-system': {}, 'expo-sharing': {}, react: {}, 'react-native': { StyleSheet: { create: x => x } }, 'react-native-safe-area-context': {}, 'react-native-svg': {}, './Button': {}, '@/lib/history': {}, '@/theme': { colors: {}, space: {} },
+  'expo-file-system': {}, 'expo-sharing': {}, react: {}, 'react-native': { StyleSheet: { create: x => x } }, 'react-native-safe-area-context': {}, 'react-native-svg': {}, './Button': {}, '@/lib/history': {}, '@/theme': { colors: {}, space: {}, radius: {}, font: {}, type: {} },
  });
  assert.equal(cardLines('Khám phá ánh sáng', 30, 2)[0], 'Khám phá ánh sáng');
  const lines = cardLines('Một hai ba bốn năm sáu bảy tám chín', 12, 2);
