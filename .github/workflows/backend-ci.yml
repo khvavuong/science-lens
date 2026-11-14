@@ -1,0 +1,53 @@
+name: Backend CI/CD
+on:
+  pull_request:
+    paths: ['server/**', 'supabase/**', '.github/workflows/backend-ci.yml']
+  push:
+    branches: [main]
+    paths: ['server/**', 'supabase/**', '.github/workflows/backend-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: node --import tsx --test src/*.test.ts
+  deploy:
+    needs: check
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_ORG_ID: team_UBknBFXYNjGpPdttQiZUxgR5
+      VERCEL_PROJECT_ID: prj_mQV3awk1SeAPmSFAlnWQfjSNkfh6
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - name: Check deployment credential
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo 'Set the VERCEL_TOKEN repository secret before deploying.' >&2
+            exit 1
+          fi
+      - run: npm install --global vercel@53.2.0
+      - name: Deploy existing production backend
+        run: vercel deploy --prod --yes --scope hungbils-projects --token "$VERCEL_TOKEN"
